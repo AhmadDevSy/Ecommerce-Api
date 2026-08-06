@@ -4,6 +4,7 @@ public enum Permission
 {
     Products_ManageOwnProduct = 1,
     Products_ChangeProductState,
+
     Categories_ManageCategories,
 
     Orders_ViewOwnOrders,
@@ -15,6 +16,8 @@ public enum Permission
     Sales_ViewAllSales,
 
     Search_ManageSearch,
+
     Carts_ManageCart,
+
     Promocodes_ManagePromocode,
 }

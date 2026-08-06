@@ -14,9 +14,9 @@ namespace Presentation_Layer.Controllers;
 public class SalesController : ControllerBase
 {
     private SalesBusiness SalesBusiness { get; }
-    private UsersBusiness UsersBusiness { get; }
+    private Business_Layer.Business.User UsersBusiness { get; }
 
-    public SalesController(SalesBusiness salesBusiness, UsersBusiness usersBusiness)
+    public SalesController(SalesBusiness salesBusiness, Business_Layer.Business.User usersBusiness)
     {
         SalesBusiness = salesBusiness;
         UsersBusiness = usersBusiness;

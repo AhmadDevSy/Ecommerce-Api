@@ -15,13 +15,13 @@ namespace Presentation_Layer.Controllers;
 public class OrdersController : ControllerBase
 {
     public ILogger<OrdersController> logger { get; }
-    public OrdersBusiness OrdersBusiness { get; }
-    public UsersBusiness UsersBusiness { get; }
+    public Orders OrdersBusiness { get; }
+    public Business_Layer.Business.User UsersBusiness { get; }
 
     public OrdersController (
         ILogger<OrdersController> _logger,
-        OrdersBusiness ordersBusiness,
-        UsersBusiness usersBusiness
+        Orders ordersBusiness,
+        Business_Layer.Business.User usersBusiness
         )
     {
         logger = _logger;

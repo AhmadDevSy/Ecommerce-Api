@@ -20,7 +20,7 @@ public class ProductsBusiness
 {
     public ProductData ProductsData { get; }
     public ImagesBusiness ImagesBusiness { get; }
-    public UsersBusiness UsersBusiness { get; }
+    public User UsersBusiness { get; }
     public InventoryKeyGenerator InventoryKeyGenerator { get; }
     public FileSystem FileSystem { get; }
     public ILogger<ProductsBusiness> Logger { get; }
@@ -30,7 +30,7 @@ public class ProductsBusiness
     public ProductsBusiness(
         ProductData productsData,
         ImagesBusiness imagesBusiness,
-        UsersBusiness usersBusiness,
+        User usersBusiness,
         InventoryKeyGenerator inventoryKeyGenerator,
         FileSystem fileSystem,
         ILogger<ProductsBusiness> logger,

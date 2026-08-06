@@ -12,9 +12,9 @@ namespace Presentation_Layer.Controllers;
 [Route("[controller]")]
 public class ProductsController : ControllerBase
 {
-    public ProductsBusiness ProductsBusiness { get; }
+    public Business_Layer.Business.Product ProductsBusiness { get; }
 
-    public ProductsController(ProductsBusiness productsBusiness)
+    public ProductsController(Business_Layer.Business.Product productsBusiness)
     {
         ProductsBusiness = productsBusiness;
     }

@@ -10,7 +10,7 @@ using Data_Layer.Data;
 
 namespace Business_Layer.Business;
 
-public class CategoryBusiness 
+public class Category 
 {
     public CategoryData CategoryData { get; }
     public ImagesBusiness ImagesBusiness { get; }
@@ -18,10 +18,10 @@ public class CategoryBusiness
     public IMemoryCache Cache { get; }
     public CacheKeys CacheKeys { get; }
 
-    public CategoryBusiness(
+    public Category(
         CategoryData categoryData,
         ImagesBusiness imagesBusiness,
-        ILogger<CategoryBusiness> logger,
+        ILogger<Category> logger,
         IMemoryCache cache,
         CacheKeys cacheKeys
         )
@@ -33,7 +33,7 @@ public class CategoryBusiness
         CacheKeys = cacheKeys;
     }
 
-    public async Task<List<Category>> GetAll()
+    public async Task<List<Models.Category>> GetAll()
     {
         return await GetCategoriesList();
     }
@@ -93,7 +93,7 @@ public class CategoryBusiness
         return true;
     }
 
-    public async Task<Category> GetById(int id)
+    public async Task<Models.Category> GetById(int id)
     {
         if (id < 1)
         {
@@ -123,11 +123,11 @@ public class CategoryBusiness
         return await CategoryData.Update(categoyId, categoryName);
     }
 
-    private async Task<List<Category>> GetCategoriesList()
+    private async Task<List<Models.Category>> GetCategoriesList()
     {
-        if (!Cache.TryGetValue(CacheKeys.CategoriesCacheKey, out List<Category> categories))
+        if (!Cache.TryGetValue(CacheKeys.CategoriesCacheKey, out List<Models.Category> categories))
         {
-            categories = await CategoryData.GetAll() ?? new List<Category>();
+            categories = await CategoryData.GetAll() ?? new List<Models.Category>();
 
             var cacheOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromDays(1));
 

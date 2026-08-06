@@ -9,20 +9,20 @@ using Data_Layer.Data;
 
 namespace Business_Layer.Business;
 
-public class CartItemBusiness
+public class CartItem
 {
     public CartItemsData CartItemData { get; }
-    public UsersBusiness UsersBusiness { get; }
+    public User UsersBusiness { get; }
     public InventoryKeyGenerator InventoryKeyGenerator { get; }
-    public ILogger<CartItemBusiness> Logger { get; }
+    public ILogger<CartItem> Logger { get; }
     public StoreUrls StoreUrls { get; }
     public HttpClient HttpClient { get; }
 
-    public CartItemBusiness(
+    public CartItem(
         CartItemsData cartItemData,
-        UsersBusiness usersBusiness,
+        User usersBusiness,
         InventoryKeyGenerator inventoryKeyGenerator,
-        ILogger<CartItemBusiness> logger,
+        ILogger<CartItem> logger,
         StoreUrls storeUrls,
         HttpClient httpClient
         )

@@ -10,10 +10,10 @@ namespace Presentation_Layer.Controllers;
 [Route("[controller]")]
 public class UsersController : ControllerBase
 {
-    private UsersBusiness UsersBusiness { get; }
+    private Business_Layer.Business.User UsersBusiness { get; }
     public AuthenticateHelper AuthenticateHelper { get; }
 
-    public UsersController(UsersBusiness usersBusiness, AuthenticateHelper authenticateHelper)
+    public UsersController(Business_Layer.Business.User usersBusiness, AuthenticateHelper authenticateHelper)
     {
         UsersBusiness = usersBusiness;
         AuthenticateHelper = authenticateHelper;
@@ -25,7 +25,7 @@ public class UsersController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<string>> AuthenticateUser(AuthenticationRequest data)
     {
-        User user = await UsersBusiness.Login(data);
+        Models.User user = await UsersBusiness.Login(data);
 
         if (user == null)
         {
@@ -48,7 +48,7 @@ public class UsersController : ControllerBase
             return BadRequest(inValidResult);
         }
 
-        User user = await UsersBusiness.InsertUser(request.name, request.email, request.password);
+        Models.User user = await UsersBusiness.InsertUser(request.name, request.email, request.password);
 
         if (user == null)
         {

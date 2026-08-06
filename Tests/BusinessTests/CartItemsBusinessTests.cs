@@ -18,7 +18,7 @@ namespace Tests.BusinessTests
 {
     public class CartItemsBusinessTests
     {
-        public class CartItemBusinessForTest : CartItemBusiness
+        public class CartItemBusinessForTest : Business_Layer.Business.CartItem
         {
             public CartItemBusinessForTest()
                 : base(null, null, null, null, null, null)

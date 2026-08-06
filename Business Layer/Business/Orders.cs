@@ -14,7 +14,7 @@ public class OrdersBusiness
 {
     public OrdersBusiness(
         OrderData ordersData,
-        UsersBusiness usersBusiness,
+        User usersBusiness,
         CartItemBusiness cartItemBusiness,
         InventoryKeyGenerator inventoryKeyGenerator,
         ILogger<OrdersBusiness> logger,
@@ -32,7 +32,7 @@ public class OrdersBusiness
     }
 
     public OrderData OrdersData { get; }
-    public UsersBusiness UsersBusiness { get; }
+    public User UsersBusiness { get; }
     public CartItemBusiness CartItemBusiness { get; }
     public InventoryKeyGenerator InventoryKeyGenerator { get; }
     public ILogger<OrdersBusiness> Logger { get; }

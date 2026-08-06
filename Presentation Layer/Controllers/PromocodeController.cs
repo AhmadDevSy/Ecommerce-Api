@@ -14,9 +14,9 @@ namespace Presentation_Layer.Controllers;
 public class PromocodeController : ControllerBase
 {
 
-    public PromoCodeBusiness PromoCodeBusiness { get; }
+    public Business_Layer.Business.PromoCode PromoCodeBusiness { get; }
 
-    public PromocodeController(PromoCodeBusiness promoCodeBusiness)
+    public PromocodeController(Business_Layer.Business.PromoCode promoCodeBusiness)
     {
         PromoCodeBusiness = promoCodeBusiness;
     }

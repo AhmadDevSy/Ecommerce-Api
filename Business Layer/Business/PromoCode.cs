@@ -5,16 +5,16 @@ using Data_Layer.Data;
 
 namespace Business_Layer.Business;
 
-public class PromoCodeBusiness 
+public class PromoCode 
 {
-    public ProductsBusiness ProductsBusiness { get; }
+    public Product ProductsBusiness { get; }
     public PromoCodeData PromoCodeData { get; }
-    public UsersBusiness UsersBusiness { get; }
+    public User UsersBusiness { get; }
 
-    public PromoCodeBusiness(
-        ProductsBusiness productsBusiness,
+    public PromoCode(
+        Product productsBusiness,
         PromoCodeData promoCodeData,
-        UsersBusiness usersBusiness
+        User usersBusiness
         )
     {
         ProductsBusiness = productsBusiness;
@@ -49,7 +49,7 @@ public class PromoCodeBusiness
         return await PromoCodeData.AddPromoCode(promoCode,userId);
     }
 
-    public async Task<List<PromoCode>> GetPromoCodes()
+    public async Task<List<Models.PromoCode>> GetPromoCodes()
     {
         int userId = UsersBusiness.GetUserId();
 

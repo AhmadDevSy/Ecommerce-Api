@@ -4,12 +4,12 @@ using Data_Layer.Data;
 using Models;
 namespace Business_Layer.Business;
 
-public class CartsBusiness
+public class Carts
 {
     public CartsData CartsData { get; }
-    public UsersBusiness UsersBusiness { get; }
+    public User UsersBusiness { get; }
 
-    public CartsBusiness(CartsData cartsData, UsersBusiness usersBusiness)
+    public Carts(CartsData cartsData, User usersBusiness)
     {
         CartsData = cartsData;
         UsersBusiness = usersBusiness;

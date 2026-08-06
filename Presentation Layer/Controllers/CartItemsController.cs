@@ -12,9 +12,9 @@ namespace Presentation_Layer.Controllers;
 [CheckPermission(Permission.Carts_ManageCart)]
 public class CartItemsController : ControllerBase
 {
-    public CartItemBusiness CartItemBusiness { get; }
+    public CartItem CartItemBusiness { get; }
 
-    public CartItemsController(CartItemBusiness cartItemBusiness)
+    public CartItemsController(CartItem cartItemBusiness)
     {
         CartItemBusiness = cartItemBusiness;
     }

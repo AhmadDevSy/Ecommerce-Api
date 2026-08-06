@@ -12,9 +12,9 @@ namespace Presentation_Layer.Controllers;
 
 public class CategoriesController : ControllerBase
 {
-    public CategoryBusiness CategoryBusiness { get; }
+    public Business_Layer.Business.Category CategoryBusiness { get; }
 
-    public CategoriesController(CategoryBusiness categoryBusiness)
+    public CategoriesController(Business_Layer.Business.Category categoryBusiness)
     {
         CategoryBusiness = categoryBusiness;
     }
@@ -23,7 +23,7 @@ public class CategoriesController : ControllerBase
 
     [AllowAnonymous]
     [HttpGet]
-    public async Task<ActionResult<List<Category>>> GetCategories()
+    public async Task<ActionResult<List<Models.Category>>> GetCategories()
     {
         var result = await CategoryBusiness.GetAll();
         return result != null ?
@@ -34,7 +34,7 @@ public class CategoriesController : ControllerBase
 
     [AllowAnonymous]
     [HttpGet("{id}")]
-    public async Task<ActionResult<Category>> GetCategory(int id)
+    public async Task<ActionResult<Models.Category>> GetCategory(int id)
     {
         var category = await CategoryBusiness.GetById(id);
 
@@ -47,7 +47,7 @@ public class CategoriesController : ControllerBase
     [Authorize]
     [CheckPermission(Permission.Categories_ManageCategories)]
     [HttpPost("{name}")]
-    public async Task<ActionResult<Category>> CreateCategory(string name)
+    public async Task<ActionResult<Models.Category>> CreateCategory(string name)
     {
         return await CategoryBusiness.Add(name) ?
          Created() : BadRequest();
