@@ -10,14 +10,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Business_Layer.Business;
 
-public class OrdersBusiness
+public class Orders
 {
-    public OrdersBusiness(
+    public Orders(
         OrderData ordersData,
         User usersBusiness,
-        CartItemBusiness cartItemBusiness,
+        CartItem cartItemBusiness,
         InventoryKeyGenerator inventoryKeyGenerator,
-        ILogger<OrdersBusiness> logger,
+        ILogger<Orders> logger,
         StoreUrls storeUrls,
         HttpClient httpClient
         )
@@ -33,9 +33,9 @@ public class OrdersBusiness
 
     public OrderData OrdersData { get; }
     public User UsersBusiness { get; }
-    public CartItemBusiness CartItemBusiness { get; }
+    public CartItem CartItemBusiness { get; }
     public InventoryKeyGenerator InventoryKeyGenerator { get; }
-    public ILogger<OrdersBusiness> Logger { get; }
+    public ILogger<Orders> Logger { get; }
     public StoreUrls StoreUrls { get; }
     public HttpClient HttpClient { get; }
 

@@ -10,7 +10,7 @@ namespace Presentation_Layer.Controllers;
 
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/order")]
 [Authorize]
 public class OrdersController : ControllerBase
 {

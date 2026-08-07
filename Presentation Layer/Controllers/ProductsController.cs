@@ -4,28 +4,20 @@ using Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Business_Layer.Business;
+using Models.DTO;
+using Data_Layer.Data;
 
 
 namespace Presentation_Layer.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/product")]
 public class ProductsController : ControllerBase
 {
-    public Business_Layer.Business.Product ProductsBusiness { get; }
-
-    public ProductsController(Business_Layer.Business.Product productsBusiness)
+    [HttpGet("category-products-catalog")]
+    public async Task<IActionResult> GetProductsCatalog([FromQuery] int categoryId, [FromQuery] int lastSeenId)
     {
-        ProductsBusiness = productsBusiness;
-    }
-
-
-    
-    [AllowAnonymous]
-    [HttpGet]
-    public async Task<IActionResult> GetProductsPage([FromQuery] int categoryId, [FromQuery]int take, [FromQuery] int lastSeenId)
-    {
-        var products = await ProductsBusiness.GetProductsCatalog(categoryId,take,lastSeenId);
+        var products = await Product.GetProductsCatalog(categoryId, lastSeenId);
         if (products == null)
         {
             return BadRequest();
@@ -39,148 +31,193 @@ public class ProductsController : ControllerBase
         var result = new
         {
             Products = products,
-            LastSeenId = products[products.Count - 1].id
+            LastSeenId = products[products.Count - 1].Id
         };
         return Ok(result);
     }
 
-    [AllowAnonymous]
-    [HttpGet("get-all-sections")]
-    public async Task<IActionResult> GetProductsCatalogForAllCategories([FromQuery] int take, [FromQuery] int lastSeenId)
+    [HttpGet("all-products-catalog")]
+    public async Task<IActionResult> GetProductsCatalog([FromQuery] int lastSeenId)
     {
-        var products = await ProductsBusiness.GetProductsCatalogForAllCategories(take, lastSeenId);
-
-        if (products == null)
-        {
-            return BadRequest();
-        }
+        var products = await Product.GetProductsCatalog(lastSeenId);
 
         if (products.Count == 0)
         {
-            return NoContent();
+            return NotFound();
         }
 
         var result = new
         {
             Products = products,
-            LastSeenId = products[products.Count - 1].id
+            LastSeenId = products[products.Count - 1].Id
         };
         return Ok(result);
     }
 
-    [AllowAnonymous]
     [HttpGet("{productId}")]
-    public async Task<ActionResult<ProductDetails>> GetProductById(int productId)
+    public async Task<ActionResult<ProductDTO>> GetProductById(int productId)
     {
-        var product = await ProductsBusiness.GetProductById(productId);
+        var product = await Product.GetById(productId);
 
-        return product != null ?
-            Ok(product) : NotFound();
+        if (product == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(product.DTO);
     }
 
-
-
-    [AllowAnonymous]
     [HttpGet("user/{userId}")]
     public async Task<ActionResult<List<ProductCatalog>>> GetProductsByUserId(int userId)
     {
-        var products = await ProductsBusiness.GetProductByUserId(userId);
-        return products != null ?
-            Ok(products) : NotFound();
+        var products = await Product.GetProductsByUserId(userId);
+
+        if (products == null || products.Count == 0)
+        {
+            return NotFound();
+        }
+
+        return Ok(products);
     }
 
-
-
-    [AllowAnonymous]
     [HttpGet("images/{productId}")]
-    public async Task<ActionResult<List<ProductImage>>> GetImages(int productId)
+    public async Task<ActionResult<IEnumerable<ProductImageDTO>>> GetImages(int productId)
     {
-        var images = await ProductsBusiness.GetProductImages(productId);
-        return images != null ?
-            Ok(images) : NotFound();
+        Product product = await Product.GetById(productId);
+
+        if (product == null)
+        {
+            return NotFound();
+        }
+
+        IEnumerable<ProductImageDTO> images = await ProductImage.GetAllByProductId(productId);
+
+        if (images == null || images.Count() == 0)
+        {
+            return NotFound();
+        }
+
+        return Ok(images);
     }
 
-
-
-    [Authorize]
-    [CheckPermission(Permission.Products_ManageOwnProduct)]
-    [HttpGet("my-products")]
-    public async Task<ActionResult<List<ProductCatalog>>> GetMyProducts()
-    {
-        var products = await ProductsBusiness.GetMyProducts();
-        return products != null ?
-            Ok(products) : NotFound();
-    }
-
-
-
-    [Authorize]
-    [CheckPermission(Permission.Products_ManageOwnProduct)]
     [HttpPost]
-    public async Task<IActionResult> InsertProduct(InsertProductRequest product)
+    public async Task<IActionResult> InsertProduct(InsertProductRequest info)
     {
+        Product product = new Product();
 
-        var result = await ProductsBusiness.InsertProduct(product);
-        return result.Success ?
-            Ok(result) : BadRequest(result.ErrorMessage);
+        product.Price = info.price;
+        product.CategoryId = info.categoryId;
+        product.Name = info.name;
+        product.Description = info.description;
+
+        if (await product.Save())
+        {
+            return Ok(product.Id);
+        }
+
+        return BadRequest();
+    }
+
+    [HttpPut("{productId}")]
+    public async Task<IActionResult> Update(ProductDTO dto, int productId)
+    {
+        Product product = await Product.GetById(productId);
+
+        if (product == null)
+        {
+            return NotFound("Product Not Found");
+        }
+
+        product.Name = dto.Name;
+        product.Description = dto.Description;
+        product.CategoryId = dto.CategoryId;
+        product.Price = dto.Price;
+
+        if (await product.Save())
+        {
+            return Ok();
+        }
+        else
+        {
+            return BadRequest("Invalid Inputs");
+        }
     }
 
 
-
-    [Authorize]
-    [CheckPermission(Permission.Products_ManageOwnProduct)]
-    [HttpPost("add-quantity")]
-    public async Task<IActionResult> AddStockQuantity(AddProductQuantity request)
+    [HttpPost("upload-image/{productId}")]
+    public async Task<IActionResult> UploadImage(IFormFile image, int productId)
     {
-        return await ProductsBusiness.AddStockQuantity(request) ?
-            Ok() : BadRequest();
+        if (image == null || image.Length == 0)
+        {
+            return BadRequest("Image Required");
+        }
+
+        Product product = await Product.GetById(productId);
+
+        if (product == null)
+        {
+            return NotFound("Product Not Found");
+        }
+
+        ProductImageDTO dto = await product.UploadImage(image);
+
+        if (dto != null)
+        {
+            return Ok(dto);
+        }
+        else
+        {
+            return BadRequest("Save Image Failed");
+        }
     }
 
-
-
-    [Authorize]
-    [CheckPermission(Permission.Products_ManageOwnProduct)]
-    [HttpPost("{productId}")]
-    public async Task<IActionResult> UploadImage(List<IFormFile> images, int productId)
-    {
-        var result = await ProductsBusiness.UploadImage(images, productId);
-        return result.Success ?
-            Ok(result.Data) : BadRequest(result.ErrorMessage);
-    }
-
-
-
-    [Authorize]
-    [CheckPermission(Permission.Products_ManageOwnProduct)]
-    [HttpPut]
-    public async Task<IActionResult> UpdateProduct(UpdateProductRequest product)
-    {
-        return await ProductsBusiness.UpdateProduct(product) ?
-            Ok() : BadRequest("Cant access this product");
-
-    }
-
-
-
-    [Authorize]
-    [CheckPermission(Permission.Products_ManageOwnProduct)]
-    [HttpPatch("image/{productId}")]
+    [HttpPatch("main-image/{productId}")]
     public async Task<IActionResult> SetMainImage(int productId, [FromQuery] int imageId)
     {
-        return await ProductsBusiness.SetProductMainImage(productId, imageId) ?
-            Ok() : BadRequest();
+        Product product = await Product.GetById(productId);
+
+        if (product == null)
+        {
+            return NotFound("Product Not Found");
+        }
+
+        ProductImage productImage = await ProductImage.GetById(imageId);
+
+        if (productImage == null)
+        {
+            return NotFound("Image Not Found");
+        }
+
+        if (productImage.ProductId != product.Id)
+        {
+            return BadRequest("The image does not belong to this product");
+        }
+
+        product.MainImageId = productImage.Id;
+
+        if (!await product.Save())
+        {
+            return Problem("Failed to set the main image.", statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        return NoContent();
     }
 
-
-
-    [Authorize]
-    [CheckPermission(Permission.Products_ChangeProductState)]
-    [HttpPatch("{productId}")]
-    public async Task<IActionResult> UpdateProductState(int productId, ProductState state)
+    [HttpPost("send-add-quantity-request/{productId}")]
+    public async Task<IActionResult> SendAddQuantityRequest(ProductQuantity request, int productId)
     {
-        return await ProductsBusiness.UpdateProductState(productId, state) ?
-            Ok() : BadRequest();
+        Product product = await Product.GetById(productId);
+
+        if (product == null)
+        {
+            return NotFound("Product Not Found");
+        }
+
+        if (!await product.SendAddQuantityRequest(request))
+        {
+            return Problem("Send Add Quantity Request Failed.", statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        return NoContent();
     }
-
-
 }

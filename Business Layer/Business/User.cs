@@ -1,6 +1,5 @@
 ﻿
 using Options;
-using Business_Layer.Sanitizations;
 using System.Security.Claims;
 using Models;
 using Microsoft.AspNetCore.Identity;
@@ -10,7 +9,7 @@ using Data_Layer.Data;
 
 namespace Business_Layer.Business;
 
-public class UsersBusiness
+public class User
 {
     private IHttpContextAccessor _httpContextAccessor { get; }
     private UsersData UsersData { get; }
@@ -18,7 +17,7 @@ public class UsersBusiness
 
     private HttpContext HttpContext => _httpContextAccessor.HttpContext;
 
-    public UsersBusiness(
+    public User(
         IHttpContextAccessor httpContext,
         UsersData usersData,
         EmailBusiness emailBusiness)
@@ -41,7 +40,7 @@ public class UsersBusiness
             return 0;
         }
     }
-    public async Task<User> Login(AuthenticationRequest request)
+    public async Task<Models.User> Login(AuthenticationRequest request)
     {
         var user = await UsersData.GetUserByEmail(request.email);
 
@@ -57,7 +56,7 @@ public class UsersBusiness
 
         return user;
     }
-    public async Task<User> InsertUser(string name, string email, string password)
+    public async Task<Models.User> InsertUser(string name, string email, string password)
     {
         var passwordHasher = new PasswordHasher<object>();
         string hashedPassword = passwordHasher.HashPassword(null, password);

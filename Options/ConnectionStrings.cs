@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Options
 {
-    public class CacheKeys
+    public class ConnectionStrings
     {
-        public string CategoriesCacheKey { get; set; }
+        public static readonly string Default = Environment.GetEnvironmentVariable("ConnectionString") ?? "";
     }
 }

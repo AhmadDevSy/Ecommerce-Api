@@ -8,8 +8,7 @@ using Business_Layer.Business;
 namespace Presentation_Layer.Controllers;
 
 [ApiController]
-[Route("[controller]")]
-
+[Route("api/category")]
 public class CategoriesController : ControllerBase
 {
     public Business_Layer.Business.Category CategoryBusiness { get; }

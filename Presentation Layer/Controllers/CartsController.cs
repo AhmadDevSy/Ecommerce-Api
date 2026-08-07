@@ -9,9 +9,8 @@ namespace Presentation_Layer.Controllers;
 
 
 [ApiController]
-[Route("[controller]")]
-[Authorize]
-[CheckPermission(Permission.Carts_ManageCart)]
+[Route("api/cart")]
+
 public class CartsController : ControllerBase
 {
     public Carts CartsBusiness { get; }

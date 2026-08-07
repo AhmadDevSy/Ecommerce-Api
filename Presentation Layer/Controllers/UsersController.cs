@@ -1,29 +1,27 @@
 ﻿using Models;
 using Microsoft.AspNetCore.Authorization;
-using Presentation_Layer.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Business_Layer.Business;
+using Models.Requests;
 
 namespace Presentation_Layer.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/user")]
 public class UsersController : ControllerBase
 {
     private Business_Layer.Business.User UsersBusiness { get; }
-    public AuthenticateHelper AuthenticateHelper { get; }
 
-    public UsersController(Business_Layer.Business.User usersBusiness, AuthenticateHelper authenticateHelper)
+    public UsersController(Business_Layer.Business.User usersBusiness)
     {
         UsersBusiness = usersBusiness;
-        AuthenticateHelper = authenticateHelper;
     }
 
 
 
     [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<ActionResult<string>> AuthenticateUser(AuthenticationRequest data)
+    public async Task<ActionResult<string>> AuthenticateUser(LoginRequest data)
     {
         Models.User user = await UsersBusiness.Login(data);
 

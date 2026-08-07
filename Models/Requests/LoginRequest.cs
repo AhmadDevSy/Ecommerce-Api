@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Models;
+namespace Models.Requests;
 
-public class AuthenticationRequest
+public class LoginRequest
 {
     [Required]
     public string email { get; set; }

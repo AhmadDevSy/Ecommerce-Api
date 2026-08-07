@@ -7,7 +7,7 @@ using Business_Layer.Business;
 namespace Presentation_Layer.Controllers;
 
 [ApiController]
-[Route("items")]
+[Route("api/cart-items")]
 [Authorize]
 [CheckPermission(Permission.Carts_ManageCart)]
 public class CartItemsController : ControllerBase

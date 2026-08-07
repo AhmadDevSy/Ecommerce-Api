@@ -7,10 +7,8 @@ using Business_Layer.Business;
 
 namespace Presentation_Layer.Controllers;
 
-[Authorize]
-[CheckPermission(Permission.Promocodes_ManagePromocode)]
 [ApiController]
-[Route("[controller]")]
+[Route("api/promocode")]
 public class PromocodeController : ControllerBase
 {
 
