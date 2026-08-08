@@ -22,19 +22,6 @@ namespace Business_Layer.Business;
 
 public class Product
 {
-    public sealed class ProductCreatedEventArgs : EventArgs
-    {
-        public ProductDTO Product { get; }
-        public ProductCreatedEventArgs(ProductDTO product)
-        {
-            Product = product;
-        }
-
-    }
-
-    public event EventHandler<ProductCreatedEventArgs>? ProductCreated;
-
-
     private EnRecordMode Mode;
 
     public int Id { get; private set; }
@@ -140,7 +127,8 @@ public class Product
                     if (addResult.Success)
                     {
                         this.Id = addResult.EntityId;
-                        OnProductCreated();
+
+                        await this.MapProductWithWarehouse();
 
                         Mode = EnRecordMode.Update;
                         return true;
@@ -150,6 +138,7 @@ public class Product
                         return false;
                     }
                 }
+
             case EnRecordMode.Update:
                 {
                     return await ProductData.Update(this.DTO);
@@ -159,7 +148,7 @@ public class Product
         return false;
     }
 
-    public async Task<ProductImageDTO> UploadImage(IFormFile image)
+    public async Task<ProductImage> UploadImage(IFormFile image)
     {
         string fullFolderPath = Path.Combine("Images/ProductImage", this.Id.ToString());
         string imageName = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
@@ -182,7 +171,7 @@ public class Product
 
         if (await productImage.Save())
         {
-            return productImage.DTO;
+            return productImage;
         }
         else
         {
@@ -219,7 +208,7 @@ public class Product
         }
     }
 
-    private async Task<bool> MapProductWithWarehouse(InsertProductRequest product)
+    private async Task MapProductWithWarehouse()
     {
         var stock = new Stock
         {
@@ -243,26 +232,15 @@ public class Product
 
             if (!response.IsSuccessStatusCode)
             {
-                return false;
+
             }
 
-            return true;
         }
         catch (Exception ex)
         {
-            throw;
+
         }
 
-    }
-
-    protected virtual void OnProductCreated()
-    {
-        OnProductCreated(new ProductCreatedEventArgs(this.DTO));
-    }
-
-    protected virtual void OnProductCreated(ProductCreatedEventArgs eventArgs)
-    {
-        ProductCreated?.Invoke(this, eventArgs);
     }
 
 }

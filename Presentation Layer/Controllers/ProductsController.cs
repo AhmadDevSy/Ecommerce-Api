@@ -39,9 +39,9 @@ public class ProductsController : ControllerBase
     [HttpGet("all-products-catalog")]
     public async Task<IActionResult> GetProductsCatalog([FromQuery] int lastSeenId)
     {
-        var products = await Product.GetProductsCatalog(lastSeenId);
+        List<ProductDTO> products = await Product.GetProductsCatalog(lastSeenId);
 
-        if (products.Count == 0)
+        if (products.Count() == 0)
         {
             return NotFound();
         }
@@ -49,7 +49,7 @@ public class ProductsController : ControllerBase
         var result = new
         {
             Products = products,
-            LastSeenId = products[products.Count - 1].Id
+            LastSeenId = products[products.Count() - 1].Id
         };
         return Ok(result);
     }
@@ -57,7 +57,7 @@ public class ProductsController : ControllerBase
     [HttpGet("{productId}")]
     public async Task<ActionResult<ProductDTO>> GetProductById(int productId)
     {
-        var product = await Product.GetById(productId);
+        Product product = await Product.GetById(productId);
 
         if (product == null)
         {
@@ -70,9 +70,9 @@ public class ProductsController : ControllerBase
     [HttpGet("user/{userId}")]
     public async Task<ActionResult<List<ProductCatalog>>> GetProductsByUserId(int userId)
     {
-        var products = await Product.GetProductsByUserId(userId);
+        List<ProductDTO> products = await Product.GetProductsByUserId(userId);
 
-        if (products == null || products.Count == 0)
+        if (products == null || products.Count() == 0)
         {
             return NotFound();
         }
@@ -101,7 +101,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> InsertProduct(InsertProductRequest info)
+    public async Task<IActionResult> Add(InsertProductRequest info)
     {
         Product product = new Product();
 
@@ -159,11 +159,11 @@ public class ProductsController : ControllerBase
             return NotFound("Product Not Found");
         }
 
-        ProductImageDTO dto = await product.UploadImage(image);
+        ProductImage productImage = await product.UploadImage(image);
 
-        if (dto != null)
+        if (productImage != null)
         {
-            return Ok(dto);
+            return Ok(productImage.DTO);
         }
         else
         {
