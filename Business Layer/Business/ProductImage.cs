@@ -70,6 +70,7 @@ namespace Business_Layer.Business
                         if (addResult.Success)
                         {
                             this.Id = addResult.EntityId;
+                            Mode = EnRecordMode.Update;
                             return true;
                         }
                         else
@@ -86,9 +87,9 @@ namespace Business_Layer.Business
             return false;
         }
 
-        public static async Task<IEnumerable<ProductImageDTO>> GetAllByProductId(int productId)
+        public static async Task<List<ProductImageDTO>> GetByProductId(int productId)
         {
-            return await ProductData.GetAllByProductId(productId);
+            return await ProductImageData.GetByProductId(productId);
         }
     }
 }

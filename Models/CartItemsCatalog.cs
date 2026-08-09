@@ -1,6 +1,6 @@
 ﻿namespace Models;
 
-public class CartItemCatalog
+public class CartItemsCatalog
 {
     public int id { get; set; }
     public int productId { get; set; }

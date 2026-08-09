@@ -15,12 +15,12 @@ namespace Presentation_Layer.Controllers;
 public class OrdersController : ControllerBase
 {
     public ILogger<OrdersController> logger { get; }
-    public Orders OrdersBusiness { get; }
+    public Business_Layer.Business.Order OrdersBusiness { get; }
     public Business_Layer.Business.User UsersBusiness { get; }
 
     public OrdersController (
         ILogger<OrdersController> _logger,
-        Orders ordersBusiness,
+        Business_Layer.Business.Order ordersBusiness,
         Business_Layer.Business.User usersBusiness
         )
     {
@@ -33,7 +33,7 @@ public class OrdersController : ControllerBase
 
     [CheckPermission(Permission.Orders_ViewOwnOrders)]
     [HttpGet]
-    public async Task<ActionResult<List<Order>>> GetMyOrders()
+    public async Task<ActionResult<List<Models.Order>>> GetMyOrders()
     {
         var orders = await OrdersBusiness.GetMyOrders();
         return orders != null ?
@@ -55,7 +55,7 @@ public class OrdersController : ControllerBase
 
     [CheckPermission(Permission.Orders_ViewUserOrders)]
     [HttpGet("UserOrder/{id}")]
-    public async Task<ActionResult<List<Order>>> GetOrdersByUserId(int id)
+    public async Task<ActionResult<List<Models.Order>>> GetOrdersByUserId(int id)
     {
         var orders = await OrdersBusiness.GetOrdersByUserId(id);
         return orders != null ?

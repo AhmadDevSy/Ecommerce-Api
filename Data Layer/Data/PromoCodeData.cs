@@ -1,31 +1,62 @@
 ﻿
 using Microsoft.Data.SqlClient;
 using System.Data;
-using Enums;
 
 using Models;
+using Models.DTO;
+using Options;
+using System.Collections.Generic;
 
 
 namespace Data_Layer.Data;
 
-public class PromoCodeData 
+public class PromoCodeData
 {
-
-    public string ConnectionString { get; }
-
-
-    public PromoCodeData(string connectionString)
+    public static async Task<PromoCodeDTO> Get(string code, int productId)
     {
-        ConnectionString = connectionString;
+        string query = @"SELECT * FROM PromoCodes WHERE ProductId = @ProductId AND Code = @Code";
+
+        using SqlConnection sqlConnection = new SqlConnection(ConnectionStrings.Default);
+        using SqlCommand sqlCommand = new SqlCommand(query, sqlConnection);
+
+        sqlCommand.Parameters.Add(new SqlParameter("@Code", SqlDbType.Int) { Value = code });
+        sqlCommand.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
+
+        try
+        {
+            await sqlConnection.OpenAsync();
+            using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return new PromoCodeDTO
+                {
+                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                    Code = reader.GetString(reader.GetOrdinal("Code")),
+                    Discount = reader.GetDecimal(reader.GetOrdinal("Discount")),
+                    ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
+                    TypeId = reader.GetInt32(reader.GetOrdinal("TypeId")),
+                    ExpiryDate = reader.GetDateTime(reader.GetOrdinal("ExpiryDate")),
+                    Count = reader.GetInt32(reader.GetOrdinal("Count")),
+                    IsEnable = reader.GetBoolean(reader.GetOrdinal("IsEnable")),
+                    UserId = reader.GetInt32(reader.GetOrdinal("UserId"))
+
+                };
+            }
+        }
+        catch (Exception)
+        {
+            return null!;
+        }
+
+        return null!;
     }
 
-
-    public async Task<List<PromoCode>> GetPromoCodes(int userId)
+    public static async Task<List<PromoCodeDTO>> Get(int userId)
     {
-        List<PromoCode> list = new();
+        List<PromoCodeDTO> list = new();
         string query = @"SELECT * FROM PromoCodes WHERE userId=@userId";
 
-        using SqlConnection sqlConnection = new SqlConnection(ConnectionString);
+        using SqlConnection sqlConnection = new SqlConnection(ConnectionStrings.Default);
         using SqlCommand sqlCommand = new SqlCommand(query, sqlConnection);
 
         sqlCommand.Parameters.Add(new SqlParameter("@userId", SqlDbType.Int) { Value = userId });
@@ -36,81 +67,113 @@ public class PromoCodeData
             using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                list.Add(new PromoCode
+                list.Add(new PromoCodeDTO
                 {
-                    id = reader.GetInt32(reader.GetOrdinal("id")),
-                    code = reader.GetString(reader.GetOrdinal("code")),
-                    discount = reader.GetDecimal(reader.GetOrdinal("discount")),
-                    productId = reader.GetInt32(reader.GetOrdinal("productId")),
-                    discountType = (DiscountType)reader.GetInt32(reader.GetOrdinal("stateId")),
-                    expiryDate = reader.GetDateTime(reader.GetOrdinal("expiryDate")),
-                    count = reader.GetInt32(reader.GetOrdinal("count")),
-                    isEnable = reader.GetBoolean(reader.GetOrdinal("isEnable")),
+                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                    Code = reader.GetString(reader.GetOrdinal("Code")),
+                    Discount = reader.GetDecimal(reader.GetOrdinal("Discount")),
+                    ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
+                    TypeId = reader.GetInt32(reader.GetOrdinal("TypeId")),
+                    ExpiryDate = reader.GetDateTime(reader.GetOrdinal("ExpiryDate")),
+                    Count = reader.GetInt32(reader.GetOrdinal("Count")),
+                    IsEnable = reader.GetBoolean(reader.GetOrdinal("IsEnable")),
+                    UserId = reader.GetInt32(reader.GetOrdinal("UserId"))
 
                 });
             }
-            return list;
         }
         catch (Exception)
         {
             return null;
         }
+
+        return list;
     }
-    public async Task<OperationResult<bool>> AddPromoCode(AddPromocode promoCode, int userId)
+
+    public static async Task<AddEntityResult> Add(PromoCodeDTO dto)
     {
-        var result = new OperationResult<bool>();
+        AddEntityResult result = new AddEntityResult();
 
-        string query = @"INSERT INTO PromoCodes (code,userId,productId,discount,count,expiryDate,stateId,isEnable)
-                                                VALUES (@code,@userId,@productId,@discount,@count,@expiryDate,@stateId,@isEnable);";
+        string query = @"INSERT INTO PromoCodes
+                             (Code,UserId,ProductId,Discount,Count,ExpiryDate,TypeId,IsEnable)
+                      Values (@Code,@UserId,@ProductId,@Discount,@Count,@ExpiryDate,@TypeId,@IsEnable);
+                             SELECT CAST(scope_identity() AS int)";
 
-        using SqlConnection sqlConnection = new SqlConnection(ConnectionString);
-        using SqlCommand sqlCommand = new SqlCommand(query, sqlConnection);
 
-        sqlCommand.Parameters.Add(new SqlParameter("@code", SqlDbType.VarChar) { Value = promoCode.code });
-        sqlCommand.Parameters.Add(new SqlParameter("@userId", SqlDbType.Int) { Value = userId });
-        sqlCommand.Parameters.Add(new SqlParameter("@productId", SqlDbType.Int) { Value = promoCode.productId });
-        sqlCommand.Parameters.Add(new SqlParameter("@discount", SqlDbType.Decimal) { Value = promoCode.discount });
-        sqlCommand.Parameters.Add(new SqlParameter("@count", SqlDbType.Int) { Value = promoCode.count });
-        sqlCommand.Parameters.Add(new SqlParameter("@expiryDate", SqlDbType.DateTime) { Value = promoCode.expiryDate });
-        sqlCommand.Parameters.Add(new SqlParameter("@stateId", SqlDbType.Int) { Value = promoCode.discountType });
-        sqlCommand.Parameters.Add(new SqlParameter("@isEnable", SqlDbType.Bit) { Value = promoCode.isEnable });
+        using SqlConnection sqlConnect = new SqlConnection(ConnectionStrings.Default);
+        using SqlCommand sqlcommand = new SqlCommand(query, sqlConnect);
+
+        sqlcommand.Parameters.Add(new SqlParameter("@Code", SqlDbType.VarChar) { Value = dto.Code });
+        sqlcommand.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = dto.UserId });
+        sqlcommand.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = dto.ProductId });
+        sqlcommand.Parameters.Add(new SqlParameter("@Discount", SqlDbType.Decimal) { Value = dto.Discount });
+        sqlcommand.Parameters.Add(new SqlParameter("@Count", SqlDbType.Int) { Value = dto.Count });
+        sqlcommand.Parameters.Add(new SqlParameter("@ExpiryDate", SqlDbType.DateTime) { Value = dto.ExpiryDate });
+        sqlcommand.Parameters.Add(new SqlParameter("@TypeId", SqlDbType.Int) { Value = dto.TypeId });
+        sqlcommand.Parameters.Add(new SqlParameter("@IsEnable", SqlDbType.Bit) { Value = dto.IsEnable });
 
         try
         {
-            await sqlConnection.OpenAsync();
-            result.Success = await sqlCommand.ExecuteNonQueryAsync() > 0;
+            await sqlConnect.OpenAsync();
+
+            var obj = await sqlcommand.ExecuteScalarAsync();
+
+            if (obj == null || obj == DBNull.Value)
+            {
+                result.Success = false;
+            }
+            else
+            {
+                result.Success = true;
+                result.EntityId = Convert.ToInt32(obj);
+            }
+
         }
         catch (Exception)
         {
             result.Success = false;
-            result.ErrorType = ErrorType.ServerIsDown;
         }
+
         return result;
     }
-    public async Task<bool> TogglePromocode(int promocodeId, int userId)
+
+    public static async Task<bool> Update(PromoCodeDTO dto)
     {
+        string query = @"UPDATE Products SET 
+                             Code=@Code, 
+                             ProductId=@ProductId, 
+                             Discount=@Discount, 
+                             Count=@Count, 
+                             ExpiryDate=@ExpiryDate, 
+                             TypeId=@TypeId, 
+                             IsEnable=@IsEnable
+                         WHERE Id=@Id";
 
-        string query = @"UPDATE PromoCodes
-                            SET isEnable = CASE 
-                                WHEN isEnable = 0 THEN 1
-                                WHEN isEnable = 1 THEN 0
-                            END
-                            WHERE id=@id AND userId=@userId";
+        using SqlConnection sqlConnect = new SqlConnection(ConnectionStrings.Default);
+        using SqlCommand sqlcommand = new SqlCommand(query, sqlConnect);
 
-        using SqlConnection sqlConnection = new SqlConnection(ConnectionString);
-        using SqlCommand sqlCommand = new SqlCommand(query, sqlConnection);
-
-        sqlCommand.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = promocodeId });
-        sqlCommand.Parameters.Add(new SqlParameter("@userId", SqlDbType.Int) { Value = userId });
+        sqlcommand.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = dto.Id });
+        sqlcommand.Parameters.Add(new SqlParameter("@Code", SqlDbType.VarChar) { Value = dto.Code });
+        sqlcommand.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = dto.ProductId });
+        sqlcommand.Parameters.Add(new SqlParameter("@Discount", SqlDbType.Decimal) { Value = dto.Discount });
+        sqlcommand.Parameters.Add(new SqlParameter("@Count", SqlDbType.Int) { Value = dto.Count });
+        sqlcommand.Parameters.Add(new SqlParameter("@ExpiryDate", SqlDbType.DateTime) { Value = dto.ExpiryDate });
+        sqlcommand.Parameters.Add(new SqlParameter("@TypeId", SqlDbType.Int) { Value = dto.TypeId });
+        sqlcommand.Parameters.Add(new SqlParameter("@IsEnable", SqlDbType.Bit) { Value = dto.IsEnable });
 
         try
         {
-            await sqlConnection.OpenAsync();
-            return await sqlCommand.ExecuteNonQueryAsync() > 0;
+            await sqlConnect.OpenAsync();
+            return await sqlcommand.ExecuteNonQueryAsync() > 0;
         }
         catch (Exception)
         {
             return false;
         }
+
     }
+
+   
+ 
+  
 }

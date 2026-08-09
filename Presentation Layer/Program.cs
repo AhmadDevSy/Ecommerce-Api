@@ -1,5 +1,6 @@
 
 using Business_Layer.Business;
+using Business_Layer.Business.Abstracts;
 using Business_Layer.SearchTries;
 using Business_Layer.Timer;
 using Data_Layer.Data;
@@ -38,13 +39,13 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<ImagesBusiness>();
 builder.Services.AddScoped<User>();
 builder.Services.AddScoped<CartItem>();
-builder.Services.AddScoped<Carts>();
+builder.Services.AddScoped<Cart>();
 builder.Services.AddScoped<Category>();
 builder.Services.AddScoped<Product>();
 builder.Services.AddScoped<PayPalBusiness>();
 builder.Services.AddScoped<PromoCode>();
 builder.Services.AddScoped<SalesBusiness>();
-builder.Services.AddScoped<Orders>();
+builder.Services.AddScoped<Order>();
 builder.Services.AddScoped<EmailBusiness>();
 builder.Services.AddScoped<SellerBusiness>();
 builder.Services.AddScoped<AuthorizeBusiness>();
@@ -52,7 +53,7 @@ builder.Services.AddScoped<InventoryKeyGenerator>();
 builder.Services.AddSingleton<FileSystem>();
 
 builder.Services.AddScoped<UsersData>();
-builder.Services.AddScoped<CartItemsData>();
+builder.Services.AddScoped<CartItemData>();
 builder.Services.AddScoped<CartsData>();
 builder.Services.AddScoped<CategoryData>();
 builder.Services.AddScoped<ProductData>();

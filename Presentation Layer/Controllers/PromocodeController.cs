@@ -3,7 +3,6 @@ using Enums;
 using Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Business_Layer.Business;
 
 namespace Presentation_Layer.Controllers;
 
@@ -11,15 +10,6 @@ namespace Presentation_Layer.Controllers;
 [Route("api/promocode")]
 public class PromocodeController : ControllerBase
 {
-
-    public Business_Layer.Business.PromoCode PromoCodeBusiness { get; }
-
-    public PromocodeController(Business_Layer.Business.PromoCode promoCodeBusiness)
-    {
-        PromoCodeBusiness = promoCodeBusiness;
-    }
-
-
     [HttpPost]
     public async Task<IActionResult> AddPromoCode(AddPromocode promoCode)
     {

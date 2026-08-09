@@ -3,28 +3,103 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using Models;
+using Options;
+using Models.DTO;
 
 namespace Data_Layer.Data;
 
 public class CartsData
 {
-    public string ConnectionString { get; }
-    public ILogger<CartsData> Logger { get; }
-
-
-    public CartsData
-        (
-        string connectionString,
-        ILogger<CartsData> logger
-        )
+    public static async Task<CartDTO> GetByCartId(int cartId)
     {
-        ConnectionString = connectionString;
-        Logger = logger;
+        string query = "SELECT Id,UserId FROM Carts WHERE Id = @Id";
+
+        using var conn = new SqlConnection(ConnectionStrings.Default);
+        using var sqlCommand = new SqlCommand(query, conn);
+
+        sqlCommand.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = cartId });
+
+        try
+        {
+            await conn.OpenAsync();
+
+            SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
+
+            if (reader.HasRows)
+            {
+                return new CartDTO
+                {
+                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                    UserId = reader.GetInt32(reader.GetOrdinal("UserId"))
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            return null!;
+        }
+
+        return null!;
+    }
+
+    public static async Task<CartDTO> GetByUserId(int userId)
+    {
+        string query = "SELECT Id,UserId FROM Carts WHERE UserId = @UserId";
+
+        using var conn = new SqlConnection(ConnectionStrings.Default);
+        using var sqlCommand = new SqlCommand(query, conn);
+
+        sqlCommand.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = userId });
+
+        try
+        {
+            await conn.OpenAsync();
+
+            SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
+
+            if (reader.HasRows)
+            {
+                return new CartDTO
+                {
+                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                    UserId = reader.GetInt32(reader.GetOrdinal("UserId"))
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            return null!;
+        }
+
+        return null!;
+    }
+    public static async Task<bool> Contains(int cartId, int productId)
+    {
+        string query = "SELECT 1 FROM CartItems WHERE CartId=@CartId AND ProductId=@ProductId";
+
+        using var conn = new SqlConnection(ConnectionStrings.Default);
+        using var sqlCommand = new SqlCommand(query, conn);
+
+        sqlCommand.Parameters.Add(new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
+        sqlCommand.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
+
+        try
+        {
+            await conn.OpenAsync();
+
+            var obj = await sqlCommand.ExecuteScalarAsync();
+
+            return obj != null && obj != DBNull.Value;
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
     }
     public async Task<int> GetCartItemsCount(int userId)
     {
         string query = "SELECT SUM(count) FROM CartItems WHERE cartId = @userId";
-        using var conn = new SqlConnection(ConnectionString);
+        using var conn = new SqlConnection(ConnectionStrings.Default);
         using var sqlCommand = new SqlCommand(query, conn);
 
         sqlCommand.Parameters.Add(new SqlParameter("@userId", SqlDbType.Int) { Value = userId });
@@ -33,7 +108,7 @@ public class CartsData
         {
             await conn.OpenAsync();
             var result = await sqlCommand.ExecuteScalarAsync();
-            if(result != null && result != DBNull.Value)
+            if (result != null && result != DBNull.Value)
             {
                 return Convert.ToInt32(result);
             }
@@ -41,15 +116,14 @@ public class CartsData
         }
         catch (Exception ex)
         {
-            Logger.LogError("Database dwon Error Massage:{ex}", ex);
             return -1;
         }
     }
-    public async Task<List<CartItemCatalog>> GetCartItems(int userId)
+    public async Task<List<CartItemsCatalog>> GetCartItems(int userId)
     {
-        List<CartItemCatalog> cartItems = new();
+        List<CartItemsCatalog> cartItems = new();
 
-        using var conn = new SqlConnection(ConnectionString);
+        using var conn = new SqlConnection(ConnectionStrings.Default);
         using var sqlCommand = new SqlCommand("GetCartItemsCatalog", conn);
 
         sqlCommand.CommandType = CommandType.StoredProcedure;
@@ -61,7 +135,7 @@ public class CartsData
             using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                cartItems.Add(new CartItemCatalog
+                cartItems.Add(new CartItemsCatalog
                 {
                     id = reader.GetInt32(reader.GetOrdinal("id")),
                     productId = reader.GetInt32(reader.GetOrdinal("productId")),
@@ -86,35 +160,34 @@ public class CartsData
         }
         catch (Exception ex)
         {
-            Logger.LogError("Database dwon Error Massage:{ex}", ex);
             return null;
         }
 
         return cartItems;
     }
-    public async Task<decimal> GetTotalPrice(int userId)
+    public static async Task<decimal> GetTotalPrice(int cartId)
     {
-        using SqlConnection sqlConnect = new SqlConnection(ConnectionString);
+        using SqlConnection sqlConnect = new SqlConnection(ConnectionStrings.Default);
         using SqlCommand sqlcommand = new SqlCommand("dbo.GetCartTotalPrice", sqlConnect);
 
         sqlcommand.CommandType = CommandType.StoredProcedure;
-        sqlcommand.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = userId });
+        sqlcommand.Parameters.Add(new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
 
         try
         {
             await sqlConnect.OpenAsync();
             var result = await sqlcommand.ExecuteScalarAsync();
-            if(result != null && result != DBNull.Value)
+            if (result != null && result != DBNull.Value)
             {
                 return (decimal)result;
             }
-            return 0;
         }
         catch (Exception ex)
         {
-            Logger.LogError("Database dwon Error Massage:{ex}", ex);
-            return -1;
+            return 0;
         }
+
+        return 0;
     }
 
 }

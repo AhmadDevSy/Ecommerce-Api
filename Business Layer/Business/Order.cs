@@ -10,14 +10,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Business_Layer.Business;
 
-public class Orders
+public class Order
 {
-    public Orders(
+    public Order(
         OrderData ordersData,
         User usersBusiness,
         CartItem cartItemBusiness,
         InventoryKeyGenerator inventoryKeyGenerator,
-        ILogger<Orders> logger,
+        ILogger<Order> logger,
         StoreUrls storeUrls,
         HttpClient httpClient
         )
@@ -35,15 +35,15 @@ public class Orders
     public User UsersBusiness { get; }
     public CartItem CartItemBusiness { get; }
     public InventoryKeyGenerator InventoryKeyGenerator { get; }
-    public ILogger<Orders> Logger { get; }
+    public ILogger<Order> Logger { get; }
     public StoreUrls StoreUrls { get; }
     public HttpClient HttpClient { get; }
 
 
 
-    public async Task<OperationResult<Order>> CreateOrder()
+    public async Task<OperationResult<Models.Order>> CreateOrder()
     {
-        OperationResult<Order> operationResult = new();
+        OperationResult<Models.Order> operationResult = new();
         int userId = UsersBusiness.GetUserId();
 
         if (userId == 0)
@@ -53,11 +53,11 @@ public class Orders
         }
 
 
-        Order order = await OrdersData.CreateOrder(userId);
+        Models.Order order = await OrdersData.CreateOrder(userId);
 
         if (order == null)
         {
-            if (await CartItemBusiness.SyncCartItemsPromocode())
+            if (await CartItemBusiness.RemoveExpiredPromocode())
             {
                 operationResult.ErrorMessage = "The quantity of products has been modified to match the quantity of the promo codes.";
             }
@@ -91,7 +91,7 @@ public class Orders
     }
 
 
-    public async Task<Order> GetOrderById(int orderId)
+    public async Task<Models.Order> GetOrderById(int orderId)
     {
         if (orderId < 1)
         {
@@ -125,7 +125,7 @@ public class Orders
         return await OrdersData.GetOrderDetails(orderId, userId);
     }
 
-    public async Task<List<Order>> GetMyOrders()
+    public async Task<List<Models.Order>> GetMyOrders()
     {
         int userId = UsersBusiness.GetUserId();
 
@@ -137,7 +137,7 @@ public class Orders
         return await OrdersData.GetOrdersByUserId(userId);
     }
 
-    public async Task<List<Order>> GetOrdersByUserId(int userId)
+    public async Task<List<Models.Order>> GetOrdersByUserId(int userId)
     {
         if (userId <= 0)
         {

@@ -6,249 +6,148 @@ using Options;
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Logging;
 using Data_Layer.Data;
+using Enums;
+using Models.DTO;
 
 namespace Business_Layer.Business;
 
 public class CartItem
 {
-    public CartItemsData CartItemData { get; }
-    public User UsersBusiness { get; }
-    public InventoryKeyGenerator InventoryKeyGenerator { get; }
-    public ILogger<CartItem> Logger { get; }
-    public StoreUrls StoreUrls { get; }
-    public HttpClient HttpClient { get; }
+    private EnRecordMode Mode;
 
-    public CartItem(
-        CartItemsData cartItemData,
-        User usersBusiness,
-        InventoryKeyGenerator inventoryKeyGenerator,
-        ILogger<CartItem> logger,
-        StoreUrls storeUrls,
-        HttpClient httpClient
-        )
+    public int Id { get; private set; }
+    public int Count { get; set; }
+    public int CartId { get; set; }
+    public int ProductId { get; set; }
+    public int? PromoCodeId { get; private set; }
+
+    public CartItemDTO DTO => new CartItemDTO
     {
-        CartItemData = cartItemData;
-        UsersBusiness = usersBusiness;
-        InventoryKeyGenerator = inventoryKeyGenerator;
-        Logger = logger;
-        StoreUrls = storeUrls;
-        HttpClient = httpClient;
+        Id = this.Id,
+        CartId = this.CartId,
+        Count = this.Count,
+        ProductId = this.ProductId,
+        PromoCodeId = this.PromoCodeId
+    };
+
+    public CartItem()
+    {
+        this.PromoCodeId = null;
+
+        Mode = EnRecordMode.Add;
     }
 
-
-    public async Task<bool> SyncCartItemsPromocode()
+    private CartItem(CartItemDTO dto)
     {
-        int userId = UsersBusiness.GetUserId();
+        this.Id = dto.Id;
+        this.CartId = dto.CartId;
+        this.Count = dto.Count;
+        this.ProductId = dto.ProductId;
+        this.PromoCodeId = dto.PromoCodeId;
 
-        if (userId == 0)
-        {
-            return false;
-        }
-
-        return await CartItemData.SyncCartItemsPromocode(userId);
+        Mode = EnRecordMode.Update;
     }
 
-    public async Task<bool> DeleteCartItem(int itemId)
+    public static async Task<CartItem> Get(int id)
     {
-        if (itemId < 1)
+        CartItemDTO dto = await CartItemData.Get(id);
+
+        if (dto == null)
         {
-            return false;
+            return null!;
         }
-
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
+        else
         {
-            return false;
+            return new CartItem(dto);
         }
-
-        return await CartItemData.DeleteCartItem(itemId, userId);
     }
 
-    public async Task<bool> InsertCartItem(int productId)
+    public static async Task<CartItem> Get(int productId,int cartId)
     {
-        if (productId < 1)
-        {
-            return false;
-        }
+        CartItemDTO dto = await CartItemData.Get(productId, cartId);
 
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
+        if (dto == null)
         {
-            return false;
+            return null!;
         }
-        return await CartItemData.InsertCartItem(productId, userId);
+        else
+        {
+            return new CartItem(dto);
+        }
     }
 
-    public async Task<bool> PlusOneCartItem(int cartItemId)
+    public async Task<bool> Save()
     {
-        if (cartItemId < 1)
+        switch (Mode)
         {
-            return false;
+            case EnRecordMode.Add:
+                {
+                    AddEntityResult addResult = await CartItemData.Add(this.DTO);
+                    if (addResult.Success)
+                    {
+                        this.Id = addResult.EntityId;
+                        Mode = EnRecordMode.Update;
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+            case EnRecordMode.Update:
+                {
+                    return await CartItemData.Update(this.DTO);
+                }
         }
 
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
-        {
-            return false;
-        }
-
-        return await CartItemData.UpdateCartItem(cartItemId, 1, userId);
-    }
-    public async Task<bool> MinusOneCartItem(int cartItemId)
-    {
-        if (cartItemId < 1)
-        {
-            return false;
-        }
-
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
-        {
-            return false;
-        }
-
-        return await CartItemData.UpdateCartItem(cartItemId, -1, userId);
+        return false;
     }
 
-    public async Task<bool> UsePromocode(int productId, string promocode)
+    public bool ApplyPromocode(PromoCode promocode)
     {
         if (promocode == null)
         {
             return false;
         }
 
-        promocode = promocode.Trim();
-
-        if (promocode.Length < 1 || productId < 1)
+        if (promocode.ProductId != this.ProductId)
         {
             return false;
         }
 
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
+        if (!promocode.IsEnable)
         {
             return false;
         }
 
-        return await CartItemData.UsePromocode(productId, promocode, userId);
+        if (promocode.IsExpired())
+        {
+            return false;
+        }
+
+        if(promocode.Count < this.Count)
+        {
+            return false;
+        }
+
+        this.PromoCodeId = promocode.Id;
+
+        return true;
     }
 
-    public async Task<List<NewOrderRequest>> GetCartItemQuantities()
+    public static async Task<bool> Delete(int id)
     {
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
-        {
-            return null;
-        }
-
-        return await CartItemData.GetCartItemQuantities(userId);
+        return await CartItemData.Delete(id);
     }
 
-    public async Task<bool> SyncCartItemsCount(List<NewOrderRequest> items)
+    public async Task<bool> Delete()
     {
-        if (items == null || items.Count < 1)
-        {
-            return false;
-        }
-
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
-        {
-            return false;
-        }
-
-        DataTable cartItemsTable = ToDataTable(items);
-
-        if (cartItemsTable == null)
-        {
-            return false;
-        }
-
-        return await CartItemData.SyncCartItemsCount(cartItemsTable, userId);
+        return await Delete(this.Id);
     }
 
-    public async Task<bool> SyncCartItemsWithStocks()
+    public async Task<List<NewOrderRequest>> GetCartItemQuantities(int cartId)
     {
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
-        {
-            return false;
-        }
-
-        var cartItemsQuantities = await GetCartItemQuantities();
-
-        if (cartItemsQuantities == null || cartItemsQuantities.Count < 1)
-        {
-            return false;
-        }
-
-        try
-        {
-            string token = InventoryKeyGenerator.GenerateJwt();
-
-            if (string.IsNullOrEmpty(token))
-            {
-                return false;
-            }
-
-            HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            var json = JsonSerializer.Serialize(cartItemsQuantities);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await HttpClient.PatchAsync(StoreUrls.SyncOrderRequest, content);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return false;
-            }
-            var responseJson = await response.Content.ReadAsStringAsync();
-            var modifiedItems = JsonSerializer.Deserialize<List<NewOrderRequest>>(responseJson, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            if (modifiedItems == null)
-            {
-                return false;
-            }
-
-            return await SyncCartItemsCount(modifiedItems);
-        }
-        catch (HttpRequestException ex)
-        {
-            Logger.LogWarning(ex, "Failed to sync cart items with external service | UserId: {UserId}", userId);
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Unexpected error while syncing cart items | UserId: {UserId}", userId);
-            throw; 
-        }
-    }
-
-    protected DataTable ToDataTable(List<NewOrderRequest> items)
-    {
-        if (items == null || items.Count < 1)
-        {
-            return null;
-        }
-
-        var table = new DataTable();
-        table.Columns.Add("mappingProductId", typeof(int));
-        table.Columns.Add("quantity", typeof(int));
-
-        foreach (var item in items)
-        {
-            table.Rows.Add(item.StockId, item.Quantity);
-        }
-
-        return table;
+        return await CartItemData.GetCartItemQuantities(cartId);
     }
 }

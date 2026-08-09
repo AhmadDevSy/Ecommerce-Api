@@ -14,48 +14,38 @@ namespace Presentation_Layer.Controllers;
 [Route("api/product")]
 public class ProductsController : ControllerBase
 {
-    [HttpGet("category-products-catalog")]
-    public async Task<IActionResult> GetProductsCatalog([FromQuery] int categoryId, [FromQuery] int lastSeenId)
+    [HttpGet("catalog")]
+    public async Task<IActionResult> GetProductsCatalog([FromQuery] int lastSeenId, [FromQuery] int? categoryId)
     {
-        var products = await Product.GetProductsCatalog(categoryId, lastSeenId);
+        var products = categoryId == null ?
+            await Product.GetProductsCatalog(lastSeenId) :
+            await Product.GetProductsCatalog(categoryId.Value, lastSeenId);
+
         if (products == null)
-        {
-            return BadRequest();
-        }
-
-        if (products.Count == 0)
-        {
-            return NoContent();
-        }
-
-        var result = new
-        {
-            Products = products,
-            LastSeenId = products[products.Count - 1].Id
-        };
-        return Ok(result);
-    }
-
-    [HttpGet("all-products-catalog")]
-    public async Task<IActionResult> GetProductsCatalog([FromQuery] int lastSeenId)
-    {
-        List<ProductDTO> products = await Product.GetProductsCatalog(lastSeenId);
-
-        if (products.Count() == 0)
         {
             return NotFound();
         }
 
-        var result = new
+        if (products.Count == 0)
         {
-            Products = products,
-            LastSeenId = products[products.Count() - 1].Id
-        };
-        return Ok(result);
+            return Ok(new
+            {
+                Products = products,
+                LastSeenId = lastSeenId
+            });
+        }
+        else
+        {
+            return Ok(new
+            {
+                Products = products,
+                LastSeenId = products[products.Count - 1].Id
+            });
+        }
     }
 
     [HttpGet("{productId}")]
-    public async Task<ActionResult<ProductDTO>> GetProductById(int productId)
+    public async Task<IActionResult> GetProductById(int productId)
     {
         Product product = await Product.GetById(productId);
 
@@ -68,11 +58,11 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("user/{userId}")]
-    public async Task<ActionResult<List<ProductCatalog>>> GetProductsByUserId(int userId)
+    public async Task<IActionResult> GetProductsByUserId(int userId)
     {
         List<ProductDTO> products = await Product.GetProductsByUserId(userId);
 
-        if (products == null || products.Count() == 0)
+        if (products == null || products.Count == 0)
         {
             return NotFound();
         }
@@ -81,7 +71,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("images/{productId}")]
-    public async Task<ActionResult<IEnumerable<ProductImageDTO>>> GetImages(int productId)
+    public async Task<IActionResult> GetImages(int productId)
     {
         Product product = await Product.GetById(productId);
 
@@ -90,9 +80,9 @@ public class ProductsController : ControllerBase
             return NotFound();
         }
 
-        IEnumerable<ProductImageDTO> images = await ProductImage.GetAllByProductId(productId);
+        IList<ProductImageDTO> images = await ProductImage.GetByProductId(productId);
 
-        if (images == null || images.Count() == 0)
+        if (images == null || images.Count == 0)
         {
             return NotFound();
         }

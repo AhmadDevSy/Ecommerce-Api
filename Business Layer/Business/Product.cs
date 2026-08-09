@@ -95,17 +95,7 @@ public class Product
     public static async Task<List<ProductDTO>> GetProductsByUserId(int userId)
     {
         return await ProductData.GetProductsByUserId(userId);
-    }
-
-    //public async Task<List<ProductImage>> GetProductImages(int productId)
-    //{
-    //    if (productId < 1)
-    //    {
-    //        return null;
-    //    }
-
-    //    return await ProductsData.GetProductImages(productId);
-    //}
+    } 
 
     public static async Task<List<ProductDTO>> GetProductsCatalog(int lastSeenId)
     {
@@ -128,7 +118,7 @@ public class Product
                     {
                         this.Id = addResult.EntityId;
 
-                        await this.MapProductWithWarehouse();
+                        await this.SendNewProductInfoToWarehouse();
 
                         Mode = EnRecordMode.Update;
                         return true;
@@ -208,14 +198,8 @@ public class Product
         }
     }
 
-    private async Task MapProductWithWarehouse()
+    private async Task SendNewProductInfoToWarehouse()
     {
-        var stock = new Stock
-        {
-            stockId = this.Id,
-            sellerId = this.UserId
-        };
-
         try
         {
             HttpClient client = new HttpClient()
@@ -225,7 +209,7 @@ public class Product
 
             // HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var json = JsonSerializer.Serialize(stock);
+            var json = JsonSerializer.Serialize(this.DTO);
             var body = new StringContent(json, Encoding.UTF8, "application/json");
 
             var response = await client.PostAsync($"Map-Product-Info-Endpoint/{this.Id}", body);

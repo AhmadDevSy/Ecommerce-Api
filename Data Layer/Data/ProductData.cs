@@ -4,6 +4,7 @@ using System.Data;
 using Models;
 using Models.DTO;
 using Options;
+using System.Collections.Generic;
 
 
 namespace Data_Layer.Data;
@@ -89,43 +90,6 @@ public static class ProductData
 
         return products;
     }
-    public static async Task<ProductDTO> GetProductById(int productId)
-    {
-        using SqlConnection connection = new SqlConnection(ConnectionStrings.Default);
-        using SqlCommand command = new SqlCommand("GetProductDetailsExtended", connection);
-
-        command.CommandType = CommandType.StoredProcedure;
-        command.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
-
-        try
-        {
-            await connection.OpenAsync();
-            using SqlDataReader reader = await command.ExecuteReaderAsync();
-            if (!await reader.ReadAsync())
-            {
-                return null;
-            }
-
-            return new ProductDTO
-            {
-                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                Name = reader.GetString(reader.GetOrdinal("name")),
-                Count = reader.GetInt32(reader.GetOrdinal("count")),
-                Price = reader.GetDecimal(reader.GetOrdinal("price")),
-                CreateDate = reader.GetDateTime(reader.GetOrdinal("date")),
-                UserId = reader.GetInt32(reader.GetOrdinal("userId")),
-                CategoryId = reader.GetInt32(reader.GetOrdinal("categoryId")),
-
-                Description = reader.IsDBNull(reader.GetOrdinal("description")) ?
-                 null : reader.GetString(reader.GetOrdinal("description")),
-            };
-
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
     public static async Task<List<ProductDTO>> GetProductsByUserId(int userId)
     {
         List<ProductDTO> products = new();
@@ -165,37 +129,42 @@ public static class ProductData
 
         return products;
     }
-
-    public static async Task<IEnumerable<ProductImageDTO>> GetAllByProductId(int productId)
+    public static async Task<ProductDTO> GetProductById(int productId)
     {
-        var images = new List<ProductImageDTO>();
+        using SqlConnection connection = new SqlConnection(ConnectionStrings.Default);
+        using SqlCommand command = new SqlCommand("GetProductDetailsExtended", connection);
 
-        string query = "SELECT id,path FROM ProductImage WHERE productId = @productId";
-        using var connection = new SqlConnection(ConnectionStrings.Default);
-        using var command = new SqlCommand(query, connection);
-
-        command.Parameters.Add(new SqlParameter("@productId", SqlDbType.Int) { Value = productId });
+        command.CommandType = CommandType.StoredProcedure;
+        command.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
 
         try
         {
             await connection.OpenAsync();
-            using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            using SqlDataReader reader = await command.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
             {
-                images.Add(new ProductImageDTO
-                {
-                    Id = reader.GetInt32(reader.GetOrdinal("id")),
-                    Url = reader.GetString(reader.GetOrdinal("path")),
-                    ProductId = productId
-                });
+                return null;
             }
+
+            return new ProductDTO
+            {
+                Id = reader.GetInt32(reader.GetOrdinal("id")),
+                Name = reader.GetString(reader.GetOrdinal("name")),
+                Count = reader.GetInt32(reader.GetOrdinal("count")),
+                Price = reader.GetDecimal(reader.GetOrdinal("price")),
+                CreateDate = reader.GetDateTime(reader.GetOrdinal("date")),
+                UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                CategoryId = reader.GetInt32(reader.GetOrdinal("categoryId")),
+
+                Description = reader.IsDBNull(reader.GetOrdinal("description")) ?
+                 null : reader.GetString(reader.GetOrdinal("description")),
+            };
+
         }
         catch (Exception)
         {
             return null;
         }
-
-        return images;
     }
     public static async Task<AddEntityResult> Add(ProductDTO product)
     {
@@ -229,7 +198,7 @@ public static class ProductData
             }
             else
             {
-                result.Success = false;
+                result.Success = true;
                 result.EntityId = Convert.ToInt32(obj);
             }
 
@@ -237,7 +206,6 @@ public static class ProductData
         catch (Exception)
         {
             result.Success = false;
-
         }
 
         return result;
@@ -268,48 +236,4 @@ public static class ProductData
         }
 
     }
-    public static async Task<bool> SetProductMainImage(int productId, int imageId)
-    {
-        string query = "UPDATE Products SET imageId=@imageId WHERE id = @productId";
-
-        using var connection = new SqlConnection(ConnectionStrings.Default);
-        using var command = new SqlCommand(query, connection);
-
-        command.Parameters.Add(new SqlParameter("@productId", SqlDbType.Int) { Value = productId });
-        command.Parameters.Add(new SqlParameter("@imageId", SqlDbType.VarChar) { Value = imageId });
-
-        try
-        {
-            await connection.OpenAsync();
-            return await command.ExecuteNonQueryAsync() > 0;
-        }
-        catch (Exception)
-        {
-            return false;
-        }
-
-    }
-    public static async Task<int> SaveImagePath(string filePath, int productId)
-    {
-        string query = @"INSERT INTO ProductImage (path, productId) VALUES (@path, @productId);
-                            SELECT CAST(scope_identity() AS int);";
-
-        using var sqlConnect = new SqlConnection(ConnectionStrings.Default);
-        using var cmd = new SqlCommand(query, sqlConnect);
-
-        cmd.Parameters.Add(new SqlParameter("@path", SqlDbType.VarChar) { Value = filePath });
-        cmd.Parameters.Add(new SqlParameter("@productId", SqlDbType.Int) { Value = productId });
-
-        try
-        {
-            await sqlConnect.OpenAsync();
-            return Convert.ToInt32(await cmd.ExecuteScalarAsync());
-        }
-        catch (Exception)
-        {
-            return 0;
-        }
-    }
-
-
 }

@@ -1,119 +1,172 @@
 ﻿using Enums;
-using Business_Layer.Sanitizations;
 using Models;
 using Data_Layer.Data;
+using Models.DTO;
+using System.Runtime.CompilerServices;
+using System.Numerics;
 
 namespace Business_Layer.Business;
 
-public class PromoCode 
+public class PromoCode
 {
-    public Product ProductsBusiness { get; }
-    public PromoCodeData PromoCodeData { get; }
-    public User UsersBusiness { get; }
+    protected EnRecordMode Mode;
 
-    public PromoCode(
-        Product productsBusiness,
-        PromoCodeData promoCodeData,
-        User usersBusiness
-        )
+    public int Id { get; protected set; }
+    public string Code { get; init; }
+    public int ProductId { get; init; }
+    public decimal Discount { get; set; }
+    public int Count { get; set; }
+    public DateTime ExpiryDate { get; set; }
+    public bool IsEnable { get; protected set; }
+    public int UserId { get; init; }
+    public DiscountType Type { get; init; }
+
+    public PromoCodeDTO DTO => new PromoCodeDTO
     {
-        ProductsBusiness = productsBusiness;
-        PromoCodeData = promoCodeData;
-        UsersBusiness = usersBusiness;
+        Id = this.Id,
+        Code = this.Code,
+        ProductId = this.ProductId,
+        Discount = this.Discount,
+        Count = this.Count,
+        ExpiryDate = this.ExpiryDate,
+        IsEnable = this.IsEnable,
+        UserId = this.UserId,
+        TypeId = (int)Type
+    };
+
+    public PromoCode()
+    {
+        this.Id = 0;
+        this.Code = null!;
+        this.ProductId = 0;
+        this.UserId = 0;
+        this.Type = DiscountType.Percent;
+        this.Discount = 0;
+        this.Count = 0;
+        this.ExpiryDate = DateTime.UtcNow;
+        this.IsEnable = false;
+
+        Mode = EnRecordMode.Add;
+    }
+
+    private PromoCode(PromoCodeDTO dto)
+    {
+        this.Id = dto.Id;
+        this.Code = dto.Code;
+        this.ProductId = dto.ProductId;
+        this.Discount = dto.Discount;
+        this.Count = dto.Count;
+        this.ExpiryDate = dto.ExpiryDate;
+        this.IsEnable = dto.IsEnable;
+        this.UserId = dto.UserId;
+        this.Type = (DiscountType)dto.TypeId;
+
+        Mode = EnRecordMode.Update;
     }
 
 
-    public async Task<OperationResult<bool>> AddPromoCode(AddPromocode promoCode)
+
+    public static async Task<PromoCode> Get(string code, int productId)
     {
-        var result = new OperationResult<bool>();
+        PromoCodeDTO dto = await PromoCodeData.Get(code, productId);
 
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
+        if (dto == null)
         {
-            result.ErrorMessage = "Unauthenticate user";
-            return result;
+            return null!;
         }
-
-        promoCode.code = Sanitization.SanitizeInput(promoCode.code);
-
-        string errorMessage = await VerifyPromoCode(promoCode);
-
-        if (!string.IsNullOrEmpty(errorMessage))
+        else
         {
-            result.ErrorMessage = errorMessage;
-            result.ErrorType = ErrorType.BadRequest;
-            return result;
+            return new PromoCode(dto);
         }
-
-        return await PromoCodeData.AddPromoCode(promoCode,userId);
     }
 
-    public async Task<List<Models.PromoCode>> GetPromoCodes()
+    public async Task<bool> Save()
     {
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
+        switch (Mode)
         {
-            return null;
+            case EnRecordMode.Add:
+                {
+                    AddEntityResult addResult = await PromoCodeData.Add(this.DTO);
+                    if (addResult.Success)
+                    {
+                        this.Id = addResult.EntityId;
+
+                        Mode = EnRecordMode.Update;
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+            case EnRecordMode.Update:
+                {
+                    return await PromoCodeData.Update(this.DTO);
+                }
         }
 
-        return await PromoCodeData.GetPromoCodes(userId);
+        return false;
     }
 
-    public async Task<bool> TogglePromocode(int promocodeId)
+    public static async Task<List<PromoCodeDTO>> Get(int userId)
     {
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
-        {
-            return false;
-        }
-
-        return await PromoCodeData.TogglePromocode(promocodeId, userId);
+        return await PromoCodeData.Get(userId);
     }
 
-    private async Task<string> VerifyPromoCode(AddPromocode promoCode)
+    public bool IsExpired()
     {
-        decimal productPrice = await ProductsBusiness.GetMyProductPriceById(promoCode.productId);
-
-        if (productPrice == -1)
-        {
-            return "Product Not Found!";
-        }
-        if (promoCode.expiryDate < DateTime.UtcNow.AddHours(1))
-        {
-            return "Expiry date Must be 1 hours older than the current time";
-        }
-        if (promoCode.discount < 0.5m)
-        {
-            return "Discount must be greater than 0.5";
-        }
-        if (!Enum.IsDefined(typeof(DiscountType), promoCode.discountType))
-        {
-            return "Invalid Discount Type";
-        }
-        if (promoCode.discountType == DiscountType.Fixed && productPrice - promoCode.discount < 1)
-        {
-            return "Price after discount must be 1 Dollar at least";
-        }
-        if (promoCode.discountType == DiscountType.Percent && productPrice - promoCode.discount / 100 < 1)
-        {
-            return "Price after discount must be 1 Dollar at least";
-        }
-        if (promoCode.count < 1 || promoCode.count > 1000)
-        {
-            return "count must be between 1 - 1000";
-        }
-        if (promoCode.code.Length < 5 || promoCode.code.Length > 12)
-        {
-            return "Code length must be between 5 - 12 letters";
-        }
-        if (promoCode.code.Contains(" "))
-        {
-            return "Code text should not contains Spaces";
-        }
-
-        return string.Empty;
+        return this.ExpiryDate > DateTime.UtcNow;
     }
+
+    public void Toggle()
+    {
+        IsEnable = !IsEnable;
+    }
+
+    //private async Task<string> VerifyPromoCode(AddPromocode promoCode)
+    //{
+    //    decimal productPrice = await ProductsBusiness.GetMyProductPriceById(promoCode.productId);
+
+    //    if (productPrice == -1)
+    //    {
+    //        return "Product Not Found!";
+    //    }
+    //    if (promoCode.expiryDate < DateTime.UtcNow.AddHours(1))
+    //    {
+    //        return "Expiry date Must be 1 hours older than the current time";
+    //    }
+    //    if (promoCode.discount < 0.5m)
+    //    {
+    //        return "Discount must be greater than 0.5";
+    //    }
+    //    if (!Enum.IsDefined(typeof(DiscountType), promoCode.discountType))
+    //    {
+    //        return "Invalid Discount Type";
+    //    }
+    //    if (promoCode.discountType == DiscountType.Fixed && productPrice - promoCode.discount < 1)
+    //    {
+    //        return "Price after discount must be 1 Dollar at least";
+    //    }
+    //    if (promoCode.discountType == DiscountType.Percent && productPrice - promoCode.discount / 100 < 1)
+    //    {
+    //        return "Price after discount must be 1 Dollar at least";
+    //    }
+    //    if (promoCode.count < 1 || promoCode.count > 1000)
+    //    {
+    //        return "count must be between 1 - 1000";
+    //    }
+    //    if (promoCode.code.Length < 5 || promoCode.code.Length > 12)
+    //    {
+    //        return "Code length must be between 5 - 12 letters";
+    //    }
+    //    if (promoCode.code.Contains(" "))
+    //    {
+    //        return "Code text should not contains Spaces";
+    //    }
+
+    //    return string.Empty;
+    //}
+
+   
 }
