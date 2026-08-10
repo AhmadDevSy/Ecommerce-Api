@@ -1,5 +1,4 @@
 ﻿
-using Business_Layer.Sanitizations;
 using Microsoft.Extensions.Caching.Memory;
 using Models;
 using Microsoft.AspNetCore.Http;
@@ -7,133 +6,81 @@ using System.Collections.Generic;
 using Options;
 using Microsoft.Extensions.Logging;
 using Data_Layer.Data;
+using Enums;
+using Models.DTO;
 
 namespace Business_Layer.Business;
 
-public class Category 
+public class Category
 {
-    public CategoryData CategoryData { get; }
-    public ImagesBusiness ImagesBusiness { get; }
-    public ILogger Logger { get; }
-    public IMemoryCache Cache { get; }
-    public CacheKeys CacheKeys { get; }
+    private EnRecordMode Mode;
 
-    public Category(
-        CategoryData categoryData,
-        ImagesBusiness imagesBusiness,
-        ILogger<Category> logger,
-        IMemoryCache cache,
-        CacheKeys cacheKeys
-        )
+    public int Id { get; protected set; }
+    public string Name { get; set; }
+
+    public CategoryDTO DTO => new CategoryDTO
     {
-        CategoryData = categoryData;
-        ImagesBusiness = imagesBusiness;
-        Logger = logger;
-        Cache = cache;
-        CacheKeys = cacheKeys;
+        Id = this.Id,
+        Name = this.Name
+    };
+
+    public Category()
+    {
+        Id = 0;
+        Name = null!;
     }
 
-    public async Task<List<Models.Category>> GetAll()
+    private Category(CategoryDTO dto)
     {
-        return await GetCategoriesList();
+        Id = dto.Id;
+        Name = dto.Name;
     }
 
-    public async Task<bool> Add(string name)
+    public static async Task<List<CategoryDTO>> GetAll()
     {
-        name = Sanitization.SanitizeInput(name.Trim());
-
-        if (name.Length < 1)
-        {
-            return false;
-        }
-
-        Cache.Remove(CacheKeys.CategoriesCacheKey);
-        return await CategoryData.Add(name);
+        return await CategoryData.GetAll();
     }
 
-    public async Task<bool> AddImage(int categoryId, IFormFile image)
+    public static async Task<Category> GetById(int id)
     {
-        if (categoryId < 1)
-        {
-            return false;
-        }
+        CategoryDTO dto = await CategoryData.GetById(id);
 
-        var category = await GetById(categoryId);
-
-        if (image == null || category.id == 0)
-        {
-            return false;
-        }
-
-        if (!await ImagesBusiness.IsValidImage(image))
-        {
-            return false;
-        }
-        try
-        {
-            if (!string.IsNullOrEmpty(category.image) && File.Exists(category.image))
-            {
-                File.Delete(category.image);
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogWarning(ex, "Failed to delete old category image | CategoryId: {CategoryId}", categoryId);
-            return false;
-        }
-
-
-        string folderName = "Images/CategoryImage";
-        var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
-        var filePath = Path.Combine(folderName, Guid.NewGuid().ToString() + extension);
-
-        Cache.Remove(CacheKeys.CategoriesCacheKey);
-        await ImagesBusiness.StreamImage(filePath, image);
-        await CategoryData.SetCategoryImage(filePath, categoryId);
-        return true;
-    }
-
-    public async Task<Models.Category> GetById(int id)
-    {
-        if (id < 1)
+        if (dto == null)
         {
             return null;
         }
-
-        var categories = await GetCategoriesList();
-
-        if (id >= categories.Count)
+        else
         {
-            return null;
+            return new Category(dto);
         }
-
-        return categories.FirstOrDefault(c => c.id == id);
     }
 
-    public async Task<bool> Update(int categoyId, string categoryName)
+    public async Task<bool> Save()
     {
-        categoryName = Sanitization.SanitizeInput(categoryName.Trim());
-
-        if (categoryName.Length < 1)
+        switch (Mode)
         {
-            return false;
+            case EnRecordMode.Add:
+                {
+                    AddEntityResult addResult = await CategoryData.Add(this.DTO);
+                    if (addResult.Success)
+                    {
+                        this.Id = addResult.EntityId;
+                        Mode = EnRecordMode.Update;
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+            case EnRecordMode.Update:
+                {
+                    return await CategoryData.Update(this.DTO);
+                }
         }
 
-        Cache.Remove(CacheKeys.CategoriesCacheKey);
-        return await CategoryData.Update(categoyId, categoryName);
+        return false;
     }
 
-    private async Task<List<Models.Category>> GetCategoriesList()
-    {
-        if (!Cache.TryGetValue(CacheKeys.CategoriesCacheKey, out List<Models.Category> categories))
-        {
-            categories = await CategoryData.GetAll() ?? new List<Models.Category>();
-
-            var cacheOptions = new MemoryCacheEntryOptions().SetAbsoluteExpiration(TimeSpan.FromDays(1));
-
-            Cache.Set(CacheKeys.CategoriesCacheKey, categories, cacheOptions);
-        }
-
-        return categories;
-    }
 }

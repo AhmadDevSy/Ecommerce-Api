@@ -4,79 +4,74 @@ using Microsoft.AspNetCore.Authorization;
 using Presentation_Layer.Authorization;
 using Enums;
 using Business_Layer.Business;
+using Models.DTO;
 
 namespace Presentation_Layer.Controllers;
 
 [ApiController]
-[Route("api/category")]
+[Route("api/categories")]
 public class CategoriesController : ControllerBase
 {
-    public Business_Layer.Business.Category CategoryBusiness { get; }
-
-    public CategoriesController(Business_Layer.Business.Category categoryBusiness)
-    {
-        CategoryBusiness = categoryBusiness;
-    }
-
-
-
-    [AllowAnonymous]
     [HttpGet]
-    public async Task<ActionResult<List<Models.Category>>> GetCategories()
+    public async Task<IActionResult> Get()
     {
-        var result = await CategoryBusiness.GetAll();
-        return result != null ?
-            Ok(result) : NotFound();
+        List<CategoryDTO> categories = await Category.GetAll();
+
+        if(categories == null)
+        {
+            return Ok(new List<CategoryDTO>());
+        }
+
+        return Ok(categories);
     }
 
-
-
-    [AllowAnonymous]
     [HttpGet("{id}")]
-    public async Task<ActionResult<Models.Category>> GetCategory(int id)
+    public async Task<IActionResult> Get(int id)
     {
-        var category = await CategoryBusiness.GetById(id);
+        Category category = await Category.GetById(id);
 
-        return category != null ?
-         Ok(category) : NotFound();
-    }
-
-
-
-    [Authorize]
-    [CheckPermission(Permission.Categories_ManageCategories)]
-    [HttpPost("{name}")]
-    public async Task<ActionResult<Models.Category>> CreateCategory(string name)
-    {
-        return await CategoryBusiness.Add(name) ?
-         Created() : BadRequest();
-    }
-
-
-    [Authorize]
-    [CheckPermission(Permission.Categories_ManageCategories)]
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateCategory(int id, [FromQuery] string name)
-    {
-        return await CategoryBusiness.Update(id, name) ?
-          NoContent() : BadRequest();
-    }
-
-
-    [Authorize]
-    [CheckPermission(Permission.Categories_ManageCategories)]
-    [HttpPatch("{categoryId}")]
-    public async Task<IActionResult> AddImage(int categoryId, IFormFile image)
-    {
-        try
+        if(category == null)
         {
-            return await CategoryBusiness.AddImage(categoryId, image) ?
-                 Ok() : NotFound();
+            return NotFound();
         }
-        catch (Exception)
+
+        return Ok(category.DTO);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateCategory(CategoryDTO dto)
+    {
+        Category category = new Category()
         {
-            return StatusCode(500);
+            Name = dto.Name
+        };
+
+        if(!await category.Save())
+        {
+            return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
         }
+
+        return NoContent();
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> Update(CategoryDTO dto)
+    {
+        Category category = await Category.GetById(dto.Id);
+
+        if (category == null)
+        {
+            return NotFound();
+        }
+
+        category.Name = dto.Name;
+
+        if (!await category.Save())
+        {
+            return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        return NoContent();
     }
 
 

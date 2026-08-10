@@ -2,29 +2,19 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Models;
+using Models.DTO;
+using Options;
 
 namespace Data_Layer.Data;
 
-public class CategoryData 
+public class CategoryData
 {
-    public string ConnectionString { get; }
-    public ILogger<CategoryData> Logger { get; }
-
-    public CategoryData(
-        string connectionString,
-        ILogger<CategoryData> logger
-        )
+    public static async Task<List<CategoryDTO>> GetAll()
     {
-        ConnectionString = connectionString;
-        Logger = logger;
-    }
-
-    public async Task<List<Category>> GetAll()
-    {
-        var categories = new List<Category>();
+        var categories = new List<CategoryDTO>();
         string query = "SELECT * FROM Categories";
 
-        using var conn = new SqlConnection(ConnectionString);
+        using var conn = new SqlConnection(ConnectionStrings.Default);
         using var cmd = new SqlCommand(query, conn);
         try
         {
@@ -33,30 +23,26 @@ public class CategoryData
 
             while (await reader.ReadAsync())
             {
-                categories.Add(new Category
+                categories.Add(new CategoryDTO
                 {
-                    id = reader.GetInt32(reader.GetOrdinal("id")),
-                    name = reader.GetString(reader.GetOrdinal("name")),
-                    image = reader.IsDBNull(reader.GetOrdinal("image")) ?
-                    null : reader.GetString(reader.GetOrdinal("image"))
+                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                    Name = reader.GetString(reader.GetOrdinal("Name"))
                 });
             }
 
         }
         catch (Exception ex)
         {
-            Logger.LogError("Database dwon Error Massage:{ex}", ex);
             return null;
         }
 
         return categories;
     }
-    public async Task<Category> GetById(int id)
+    public static async Task<CategoryDTO> GetById(int id)
     {
-        Category category = null;
-        string query = "SELECT * FROM Categories WHERE id = @id";
+        string query = "SELECT * FROM Categories WHERE Id = @Id";
 
-        using var conn = new SqlConnection(ConnectionString);
+        using var conn = new SqlConnection(ConnectionStrings.Default);
         using var cmd = new SqlCommand(query, conn);
 
         cmd.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = id });
@@ -65,50 +51,63 @@ public class CategoryData
         {
             await conn.OpenAsync();
             using var reader = await cmd.ExecuteReaderAsync();
-            if (!await reader.ReadAsync())
-                return new Category();
-
-            return new Category
+            if (await reader.ReadAsync())
             {
-                id = reader.GetInt32(reader.GetOrdinal("id")),
-                name = reader.GetString(reader.GetOrdinal("name")),
-                image = reader.IsDBNull(reader.GetOrdinal("image")) ?
-                null : reader.GetString(reader.GetOrdinal("image"))
-            };
+                return new CategoryDTO
+                {
+                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                    Name = reader.GetString(reader.GetOrdinal("Name"))
+                };
+            }
         }
         catch (Exception ex)
         {
-            Logger.LogError("Database dwon Error Massage:{ex}", ex);
             return null;
         }
-    }
-    public async Task<bool> Add(string name)
-    {
 
-        string query = "INSERT INTO Categories (name) VALUES (@name)";
-        using var conn = new SqlConnection(ConnectionString);
+        return null;
+    }
+    public static async Task<AddEntityResult> Add(CategoryDTO dto)
+    {
+        AddEntityResult result = new AddEntityResult();
+
+        string query = @"INSERT INTO Categories (Name) VALUES (@Name);
+                         SELECT CAST(scope_identity() AS int);";
+        using var conn = new SqlConnection(ConnectionStrings.Default);
         using var cmd = new SqlCommand(query, conn);
 
-        cmd.Parameters.Add(new SqlParameter("@name", SqlDbType.VarChar) { Value = name });
+        cmd.Parameters.Add(new SqlParameter("@Name", SqlDbType.VarChar) { Value = dto.Name });
 
         try
         {
             await conn.OpenAsync();
-            return await cmd.ExecuteNonQueryAsync() > 0;
+            var obj = await cmd.ExecuteScalarAsync();
+
+            if (obj == null || obj == DBNull.Value)
+            {
+                result.Success = false;
+            }
+            else
+            {
+                result.Success = true;
+                result.EntityId = (int)obj;
+            }
         }
         catch (Exception ex)
         {
-            return false;
+            result.Success = false;
         }
+
+        return result;
     }
-    public async Task<bool> Update(int categoyId, string categoryName)
+    public static async Task<bool> Update(CategoryDTO dto)
     {
-        string query = "UPDATE Categories SET name = @name WHERE id = @id";
-        using var conn = new SqlConnection(ConnectionString);
+        string query = "UPDATE Categories SET Name = @Name WHERE Id = @Id";
+        using var conn = new SqlConnection(ConnectionStrings.Default);
         using var cmd = new SqlCommand(query, conn);
 
-        cmd.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = categoyId });
-        cmd.Parameters.Add(new SqlParameter("@name", SqlDbType.VarChar) { Value = categoryName });
+        cmd.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = dto.Id });
+        cmd.Parameters.Add(new SqlParameter("@Name", SqlDbType.VarChar) { Value = dto.Name });
 
         try
         {
@@ -119,26 +118,5 @@ public class CategoryData
         {
             return false;
         }
-    }
-    public async Task SetCategoryImage(string filePath, int categoryId)
-    {
-        string query = "UPDATE Categories SET image=@image WHERE id=@id";
-
-        using SqlConnection sqlConnection = new SqlConnection(ConnectionString);
-        using SqlCommand sqlCommand = new SqlCommand(query, sqlConnection);
-
-        sqlCommand.Parameters.Add(new SqlParameter("@image", SqlDbType.VarChar) { Value = filePath });
-        sqlCommand.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = categoryId });
-
-        try
-        {
-            await sqlConnection.OpenAsync();
-            await sqlCommand.ExecuteNonQueryAsync();
-        }
-        catch (Exception)
-        {
-
-        }
-
     }
 }

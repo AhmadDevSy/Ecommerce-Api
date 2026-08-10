@@ -66,103 +66,76 @@ public class Cart
         return await CartsData.GetTotalPrice(this.Id);
     }
 
-    //public async Task<bool> RemoveExpiredPromocode()
+    //public async Task<bool> SyncCartItemsCount(List<NewOrderRequest> items)
     //{
-    //    return await CartsData.SyncCartItemsPromocode(userId);
+    //    if (items == null || items.Count < 1)
+    //    {
+    //        return false;
+    //    }
+
+    //    DataTable cartItemsTable = ToDataTable(items);
+
+    //    if (cartItemsTable == null)
+    //    {
+    //        return false;
+    //    }
+
+    //    return await CartItemData.SyncCartItemsCount(cartItemsTable, this.Id);
     //}
 
-    public async Task<bool> SyncCartItemsCount(List<NewOrderRequest> items)
-    {
-        if (items == null || items.Count < 1)
-        {
-            return false;
-        }
+    //public async Task<bool> SyncCartItemsWithStocks()
+    //{
+    //    var cartItemsQuantities = await GetCartItemQuantities();
 
-        int userId = UsersBusiness.GetUserId();
+    //    if (cartItemsQuantities == null || cartItemsQuantities.Count < 1)
+    //    {
+    //        return false;
+    //    }
 
-        if (userId == 0)
-        {
-            return false;
-        }
+    //    try
+    //    { 
+    //        var json = JsonSerializer.Serialize(cartItemsQuantities);
+    //        var content = new StringContent(json, Encoding.UTF8, "application/json");
+    //        var response = await HttpClient.PatchAsync(StoreUrls.SyncOrderRequest, content);
 
-        DataTable cartItemsTable = ToDataTable(items);
+    //        if (!response.IsSuccessStatusCode)
+    //        {
+    //            return false;
+    //        }
+    //        var responseJson = await response.Content.ReadAsStringAsync();
+    //        var modifiedItems = JsonSerializer.Deserialize<List<NewOrderRequest>>(responseJson, new JsonSerializerOptions
+    //        {
+    //            PropertyNameCaseInsensitive = true
+    //        });
 
-        if (cartItemsTable == null)
-        {
-            return false;
-        }
+    //        if (modifiedItems == null)
+    //        {
+    //            return false;
+    //        }
 
-        return await CartItemData.SyncCartItemsCount(cartItemsTable, userId);
-    }
+    //        return await SyncCartItemsCount(modifiedItems);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //    }
+    //}
 
-    public async Task<bool> SyncCartItemsWithStocks()
-    {
-        var cartItemsQuantities = await GetCartItemQuantities();
+    //protected DataTable ToDataTable(List<NewOrderRequest> items)
+    //{
+    //    if (items == null || items.Count < 1)
+    //    {
+    //        return null;
+    //    }
 
-        if (cartItemsQuantities == null || cartItemsQuantities.Count < 1)
-        {
-            return false;
-        }
+    //    var table = new DataTable();
+    //    table.Columns.Add("mappingProductId", typeof(int));
+    //    table.Columns.Add("quantity", typeof(int));
 
-        try
-        {
-            string token = InventoryKeyGenerator.GenerateJwt();
+    //    foreach (var item in items)
+    //    {
+    //        table.Rows.Add(item.StockId, item.Quantity);
+    //    }
 
-            if (string.IsNullOrEmpty(token))
-            {
-                return false;
-            }
-
-            HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            var json = JsonSerializer.Serialize(cartItemsQuantities);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await HttpClient.PatchAsync(StoreUrls.SyncOrderRequest, content);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return false;
-            }
-            var responseJson = await response.Content.ReadAsStringAsync();
-            var modifiedItems = JsonSerializer.Deserialize<List<NewOrderRequest>>(responseJson, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            if (modifiedItems == null)
-            {
-                return false;
-            }
-
-            return await SyncCartItemsCount(modifiedItems);
-        }
-        catch (HttpRequestException ex)
-        {
-            Logger.LogWarning(ex, "Failed to sync cart items with external service | UserId: {UserId}", userId);
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Unexpected error while syncing cart items | UserId: {UserId}", userId);
-            throw;
-        }
-    }
-
-    protected DataTable ToDataTable(List<NewOrderRequest> items)
-    {
-        if (items == null || items.Count < 1)
-        {
-            return null;
-        }
-
-        var table = new DataTable();
-        table.Columns.Add("mappingProductId", typeof(int));
-        table.Columns.Add("quantity", typeof(int));
-
-        foreach (var item in items)
-        {
-            table.Rows.Add(item.StockId, item.Quantity);
-        }
-
-        return table;
-    }
+    //    return table;
+    //}
 }
