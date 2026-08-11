@@ -6,21 +6,19 @@ using Models;
 using Business_Layer.Business;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Models.DTO;
+using Presentation_Layer.Extensions;
 
 namespace Presentation_Layer.Controllers;
 
 
 [ApiController]
 [Route("api/cart")]
-
 public class CartsController : ControllerBase
 {
     [HttpGet("items")]
     public async Task<IActionResult> GetCartItems()
     {
-        int userId = 0;
-
-        Cart cart = await Cart.GetByUserId(userId);
+        Cart cart = await Cart.GetByUserId(User.GetUserId());
 
         if (cart == null)
         {
@@ -40,24 +38,23 @@ public class CartsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetTotalPrice()
     {
-        int userId = 0;
-
-        Cart cart = await Cart.GetByUserId(userId);
+        Cart cart = await Cart.GetByUserId(User.GetUserId());
 
         if (cart == null)
         {
             return NotFound("Cart Not Found");
         }
 
-        return Ok(cart.GetTotalPrice());
+        return Ok(new
+        {
+            TotalPrice = await cart.GetTotalPrice()
+        });
     }
 
     [HttpPost("items/{productId}")]
     public async Task<IActionResult> Add(int productId)
     {
-        int userId = 0;
-
-        Cart cart = await Cart.GetByUserId(userId);
+        Cart cart = await Cart.GetByUserId(User.GetUserId());
 
         if (cart == null)
         {
@@ -79,7 +76,10 @@ public class CartsController : ControllerBase
             return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
         }
 
-        return Ok(item.Id);
+        return Ok(new
+        {
+            ItemId = item.Id
+        });
     }
 
     [HttpPatch("items/plus/{cartItemId}")]
@@ -156,7 +156,7 @@ public class CartsController : ControllerBase
             return NotFound("This Item Not Found In The Cart");
         }
 
-        PromoCode promocode = await PromoCode.Get(code, item.ProductId);
+        PromoCode promocode = await PromoCode.GetByCodeAndProductId(code, item.ProductId);
 
         if (promocode == null || !item.ApplyPromocode(promocode))
         {

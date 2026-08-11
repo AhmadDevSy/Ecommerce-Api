@@ -3,7 +3,6 @@
 public enum OrderState
 {
     New = 1,
-    Pending,
-    Approved,
-    Cancelled,
+    Cancelled = 2,
+    Completed = 3
 }

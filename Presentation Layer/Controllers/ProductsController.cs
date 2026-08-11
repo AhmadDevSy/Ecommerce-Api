@@ -93,19 +93,23 @@ public class ProductsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Add(InsertProductRequest info)
     {
-        Product product = new Product();
-
-        product.Price = info.price;
-        product.CategoryId = info.categoryId;
-        product.Name = info.name;
-        product.Description = info.description;
-
-        if (await product.Save())
+        Product product = new Product()
         {
-            return Ok(product.Id);
+            Price = info.price,
+            CategoryId = info.categoryId,
+            Name = info.name,
+            Description = info.description
+        };
+
+        if (!await product.Save())
+        {
+            return BadRequest();
         }
 
-        return BadRequest();
+        return Ok(new
+        {
+            ProductId = product.Id
+        });
     }
 
     [HttpPut("{productId}")]
@@ -125,7 +129,7 @@ public class ProductsController : ControllerBase
 
         if (await product.Save())
         {
-            return Ok();
+            return NoContent();
         }
         else
         {

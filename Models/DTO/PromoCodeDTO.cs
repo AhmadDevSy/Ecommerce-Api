@@ -14,7 +14,7 @@ namespace Models.DTO
         public decimal Discount { get; set; }
         public int Count { get; set; }
         public DateTime ExpiryDate { get; set; }
-        public int TypeId { get; set; }
+        public byte TypeId { get; set; }
         public bool IsEnable { get; set; }
         public int UserId { get; set; }
     }

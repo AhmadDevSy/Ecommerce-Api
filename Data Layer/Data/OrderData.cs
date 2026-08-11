@@ -4,59 +4,54 @@ using System.ComponentModel;
 using System.Data;
 using Microsoft.Extensions.Logging;
 using Models;
+using Options;
+using Models.DTO;
+using Models.Enums;
 
 namespace Data_Layer.Data;
 
-public class OrderData 
+public class OrderData
 {
 
-
-    public string ConnectionString { get; }
-    public ILogger<OrderData> Logger { get; }
-
-    public OrderData
-        (
-        string connectionString,
-        ILogger<OrderData> logger
-        )
+    public static async Task<OrderDTO> GetById(int orderId)
     {
-        ConnectionString = connectionString;
-        Logger = logger;
-    }
+        string query = "SELECT * FROM Orders WHERE Id = @Id";
 
-    public async Task<Order> GetOrderById(int orderId,int userId)
-    {
-        string query = "SELECT * FROM Orders WHERE id = @OrderId AND userId = @userId";
-
-        using SqlConnection connection = new SqlConnection(ConnectionString);
+        using SqlConnection connection = new SqlConnection(ConnectionStrings.Default);
         using SqlCommand command = new SqlCommand(query, connection);
 
-        command.Parameters.Add(new SqlParameter("@OrderId", SqlDbType.Int) { Value = orderId });
-        command.Parameters.Add(new SqlParameter("@userId", SqlDbType.Int) { Value = userId });
+        command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = orderId });
 
         try
         {
             await connection.OpenAsync();
             using SqlDataReader reader = await command.ExecuteReaderAsync();
-            await reader.ReadAsync();
-            return new Order
+
+            if (await reader.ReadAsync())
             {
-                Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                UserId = reader.GetInt32(reader.GetOrdinal("userId")),
-                TotalPrice = reader.GetDecimal(reader.GetOrdinal("totalPrice")),
-                OrderDate = reader.GetDateTime(reader.GetOrdinal("orderDate"))
-            };
+                return new OrderDTO
+                {
+                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                    UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
+                    TotalPrice = reader.GetDecimal(reader.GetOrdinal("TotalPrice")),
+                    CreatedDate = reader.GetDateTime(reader.GetOrdinal("OrderDate")),
+                    StateId = reader.GetByte(reader.GetOrdinal("StateId"))
+                };
+            }
+
 
         }
         catch (Exception ex)
         {
             return null;
         }
-
+        return null;
     }
-    public async Task<Order> CreateOrder(int userId)
+    public static async Task<CreateOrderDatabaseOperation> Create(int userId)
     {
-        using SqlConnection connection = new SqlConnection(ConnectionString);
+        CreateOrderDatabaseOperation result = new CreateOrderDatabaseOperation();
+
+        using SqlConnection connection = new SqlConnection(ConnectionStrings.Default);
         using SqlCommand command = new SqlCommand("dbo.CreateOrder", connection);
         command.CommandType = CommandType.StoredProcedure;
 
@@ -66,31 +61,40 @@ public class OrderData
         {
             await connection.OpenAsync();
             using SqlDataReader reader = await command.ExecuteReaderAsync();
-            if (!await reader.ReadAsync())
+
+            if (await reader.ReadAsync())
             {
-                return null;
+                result.OrderDto = new OrderDTO
+                {
+                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                    UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
+                    TotalPrice = reader.GetDecimal(reader.GetOrdinal("TotalPrice")),
+                    CreatedDate = reader.GetDateTime(reader.GetOrdinal("OrderDate")),
+                    StateId = reader.GetByte(reader.GetOrdinal("StateId"))
+                };
+
+                result.Result = EnCreateOrderResult.Success;
             }
 
-            return new Order
-            {
-                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                TotalPrice = reader.GetDecimal(reader.GetOrdinal("totalPrice"))
-            };
-           
+        }
+        catch (SqlException ex)
+        {
+            result.Result = (EnCreateOrderResult)ex.Number;
         }
         catch (Exception ex)
         {
-            Logger.LogError("Database dwon Error Massage:{ex}", ex);
-            return null;
+            result.Result = EnCreateOrderResult.UnExpected;
         }
 
-    }
-    public async Task<List<Order>> GetOrdersByUserId(int userId)
-    {
-        var orders = new List<Order>();
-        string query = "SELECT * FROM Orders WHERE userId = @UserId";
 
-        using SqlConnection connection = new SqlConnection(ConnectionString);
+        return result;
+    }
+    public static async Task<List<OrderDTO>> GetByUserId(int userId)
+    {
+        var orders = new List<OrderDTO>();
+        string query = "SELECT * FROM Orders WHERE UserId = @UserId";
+
+        using SqlConnection connection = new SqlConnection(ConnectionStrings.Default);
         using SqlCommand command = new SqlCommand(query, connection);
 
         command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = userId });
@@ -101,34 +105,33 @@ public class OrderData
             using SqlDataReader reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                orders.Add(new Order
+                orders.Add(new OrderDTO
                 {
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                    UserId = reader.GetInt32(reader.GetOrdinal("userId")),
-                    TotalPrice = reader.GetDecimal(reader.GetOrdinal("totalPrice")),
-                    OrderDate = reader.GetDateTime(reader.GetOrdinal("orderDate")),
+                    UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
+                    TotalPrice = reader.GetDecimal(reader.GetOrdinal("TotalPrice")),
+                    CreatedDate = reader.GetDateTime(reader.GetOrdinal("OrderDate")),
+                    StateId = reader.GetByte(reader.GetOrdinal("StateId"))
                 });
             }
 
         }
         catch (Exception ex)
         {
-            Logger.LogError("Database dwon Error Massage:{ex}", ex);
             return null;
         }
 
         return orders;
     }
-    public async Task<List<OrderDetails>> GetOrderDetails(int orderId, int userId)
+    public static async Task<List<OrderItemDTO>> GetByOrderId(int orderId)
     {
-        var orders = new List<OrderDetails>();
+        var items = new List<OrderItemDTO>();
 
-        using SqlConnection connection = new SqlConnection(ConnectionString);
-        using SqlCommand command = new SqlCommand("GetOrderDetails", connection);
+        using SqlConnection connection = new SqlConnection(ConnectionStrings.Default);
+        using SqlCommand command = new SqlCommand("GetOrderItemsByOrderId", connection);
 
         command.CommandType = CommandType.StoredProcedure;
         command.Parameters.Add(new SqlParameter("@OrderId", SqlDbType.Int) { Value = orderId });
-        command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = userId });
 
         try
         {
@@ -136,57 +139,43 @@ public class OrderData
             using SqlDataReader reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                orders.Add(new OrderDetails
+                items.Add(new OrderItemDTO
                 {
-                    price = reader.GetDecimal(reader.GetOrdinal("price")),
-                    count = reader.GetInt32(reader.GetOrdinal("count")),
-                    totalPrice = reader.GetDecimal(reader.GetOrdinal("totalPrice")),
-                    image = reader.IsDBNull(reader.GetOrdinal("image")) ?
-                     null : reader.GetString(reader.GetOrdinal("image"))
+                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                    Count = reader.GetInt32(reader.GetOrdinal("Count")),
+                    Price = reader.GetDecimal(reader.GetOrdinal("Price")),
+                    OrderId = reader.GetInt32(reader.GetOrdinal("OrderId")),
+                    ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
+                    PromoCodeId = reader.GetInt32(reader.GetOrdinal("PromoCodeId")),
                 });
             }
 
         }
         catch (Exception ex)
         {
-            Logger.LogError("Database dwon Error Massage:{ex}", ex);
             return null;
         }
 
-        return orders;
+        return items;
     }
-    public async Task<List<NewOrderRequest>> GetOrderItemQuantities(int orderId)
+
+    public static async Task<bool> UpdateState(int orderId, byte stateId)
     {
-        List<NewOrderRequest> result = new();
+        using SqlConnection connection = new SqlConnection(ConnectionStrings.Default);
+        using SqlCommand command = new SqlCommand("UPDATE Orders SET StateId = @StateId WHERE Id = @Id", connection);
 
-        string query = "SELECT productId,count FROM OrderItems WHERE orderId = @orderId";
-
-        using var conn = new SqlConnection(ConnectionString);
-        using var sqlCommand = new SqlCommand(query, conn);
-
-        sqlCommand.Parameters.Add(new SqlParameter("@orderId", SqlDbType.Int) { Value = orderId });
+        command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = orderId });
+        command.Parameters.Add(new SqlParameter("@StateId", SqlDbType.TinyInt) { Value = stateId });
 
         try
         {
-            await conn.OpenAsync();
-            using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                result.Add(new NewOrderRequest
-                {
-                    StockId = reader.GetInt32(reader.GetOrdinal("productId")),
-                    Quantity = reader.GetInt32(reader.GetOrdinal("count")),
-                });
-            }
-
-            return result;
+            await connection.OpenAsync();
+            return await command.ExecuteNonQueryAsync() > 0;
         }
         catch (Exception ex)
         {
-            Logger.LogError("Database dwon Error Massage:{ex}", ex);
-            return null;
+            return false;
         }
-
     }
 
 }

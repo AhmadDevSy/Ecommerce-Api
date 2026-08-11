@@ -14,12 +14,36 @@ public class PromoCode
     public int Id { get; protected set; }
     public string Code { get; init; }
     public int ProductId { get; init; }
-    public decimal Discount { get; set; }
-    public int Count { get; set; }
-    public DateTime ExpiryDate { get; set; }
-    public bool IsEnable { get; protected set; }
+    public decimal Discount { get; init; }
+    public bool IsEnable { get; set; }
     public int UserId { get; init; }
     public DiscountType Type { get; init; }
+
+    private int _count;
+    public int Count
+    {
+        get
+        {
+            return _count;
+        }
+        set
+        {
+            _count = _count > value ? _count : value;
+        }
+    }
+
+    private DateTime _expiryDate;
+    public DateTime ExpiryDate
+    {
+        get
+        {
+            return _expiryDate;
+        }
+        set
+        {
+            _expiryDate = _expiryDate > value ? _expiryDate : value;
+        }
+    }
 
     public PromoCodeDTO DTO => new PromoCodeDTO
     {
@@ -31,7 +55,7 @@ public class PromoCode
         ExpiryDate = this.ExpiryDate,
         IsEnable = this.IsEnable,
         UserId = this.UserId,
-        TypeId = (int)Type
+        TypeId = (byte)Type
     };
 
     public PromoCode()
@@ -64,11 +88,9 @@ public class PromoCode
         Mode = EnRecordMode.Update;
     }
 
-
-
-    public static async Task<PromoCode> Get(string code, int productId)
+    public static async Task<PromoCode> GetById(int promocodeId)
     {
-        PromoCodeDTO dto = await PromoCodeData.Get(code, productId);
+        PromoCodeDTO dto = await PromoCodeData.GetById(promocodeId);
 
         if (dto == null)
         {
@@ -78,6 +100,25 @@ public class PromoCode
         {
             return new PromoCode(dto);
         }
+    }
+
+    public static async Task<PromoCode> GetByCodeAndProductId(string code, int productId)
+    {
+        PromoCodeDTO dto = await PromoCodeData.GetByCodeAndProductId(code, productId);
+
+        if (dto == null)
+        {
+            return null!;
+        }
+        else
+        {
+            return new PromoCode(dto);
+        }
+    }
+
+    public static async Task<List<PromoCodeDTO>> GetByUserId(int userId)
+    {
+        return await PromoCodeData.GetByUserId(userId);
     }
 
     public async Task<bool> Save()
@@ -107,11 +148,6 @@ public class PromoCode
         }
 
         return false;
-    }
-
-    public static async Task<List<PromoCodeDTO>> Get(int userId)
-    {
-        return await PromoCodeData.Get(userId);
     }
 
     public bool IsExpired()
@@ -168,5 +204,5 @@ public class PromoCode
     //    return string.Empty;
     //}
 
-   
+
 }

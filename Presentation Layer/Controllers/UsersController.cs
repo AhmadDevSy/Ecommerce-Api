@@ -19,7 +19,6 @@ public class UsersController : ControllerBase
 
 
 
-    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<string>> AuthenticateUser(LoginRequest data)
     {
@@ -35,7 +34,6 @@ public class UsersController : ControllerBase
 
 
 
-    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> SignInUser(RegisterRequest request)
     {

@@ -24,7 +24,7 @@ public class CartItemData
         {
             await conn.OpenAsync();
             using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            if (await reader.ReadAsync()) 
             {
                 return new CartItemDTO
                 {
@@ -58,7 +58,7 @@ public class CartItemData
         {
             await conn.OpenAsync();
             using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+             if (await reader.ReadAsync())
             {
                 return new CartItemDTO
                 {

@@ -12,7 +12,7 @@ namespace Data_Layer.Data;
 
 public class PromoCodeData
 {
-    public static async Task<PromoCodeDTO> Get(string code, int productId)
+    public static async Task<PromoCodeDTO> GetByCodeAndProductId(string code, int productId)
     {
         string query = @"SELECT * FROM PromoCodes WHERE ProductId = @ProductId AND Code = @Code";
 
@@ -50,16 +50,54 @@ public class PromoCodeData
 
         return null!;
     }
-
-    public static async Task<List<PromoCodeDTO>> Get(int userId)
+    public static async Task<PromoCodeDTO> GetById(int promocodeId)
     {
         List<PromoCodeDTO> list = new();
-        string query = @"SELECT * FROM PromoCodes WHERE userId=@userId";
+        string query = @"SELECT * FROM PromoCodes WHERE Id=@Id";
 
         using SqlConnection sqlConnection = new SqlConnection(ConnectionStrings.Default);
         using SqlCommand sqlCommand = new SqlCommand(query, sqlConnection);
 
-        sqlCommand.Parameters.Add(new SqlParameter("@userId", SqlDbType.Int) { Value = userId });
+        sqlCommand.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = promocodeId });
+
+        try
+        {
+            await sqlConnection.OpenAsync();
+            using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return new PromoCodeDTO
+                {
+                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                    Code = reader.GetString(reader.GetOrdinal("Code")),
+                    Discount = reader.GetDecimal(reader.GetOrdinal("Discount")),
+                    ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
+                    TypeId = reader.GetInt32(reader.GetOrdinal("TypeId")),
+                    ExpiryDate = reader.GetDateTime(reader.GetOrdinal("ExpiryDate")),
+                    Count = reader.GetInt32(reader.GetOrdinal("Count")),
+                    IsEnable = reader.GetBoolean(reader.GetOrdinal("IsEnable")),
+                    UserId = reader.GetInt32(reader.GetOrdinal("UserId"))
+
+                };
+            }
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        return null;
+    }
+    public static async Task<List<PromoCodeDTO>> GetByUserId(int userId)
+    {
+        List<PromoCodeDTO> result = new List<PromoCodeDTO>();
+
+        string query = @"SELECT * FROM PromoCodes WHERE UserId = @UserId";
+
+        using SqlConnection sqlConnection = new SqlConnection(ConnectionStrings.Default);
+        using SqlCommand sqlCommand = new SqlCommand(query, sqlConnection);
+
+        sqlCommand.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = userId });
 
         try
         {
@@ -67,7 +105,7 @@ public class PromoCodeData
             using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                list.Add(new PromoCodeDTO
+                result.Add(new PromoCodeDTO
                 {
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
                     Code = reader.GetString(reader.GetOrdinal("Code")),
@@ -84,12 +122,11 @@ public class PromoCodeData
         }
         catch (Exception)
         {
-            return null;
+            return null!;
         }
 
-        return list;
+        return result;
     }
-
     public static async Task<AddEntityResult> Add(PromoCodeDTO dto)
     {
         AddEntityResult result = new AddEntityResult();
@@ -136,7 +173,6 @@ public class PromoCodeData
 
         return result;
     }
-
     public static async Task<bool> Update(PromoCodeDTO dto)
     {
         string query = @"UPDATE Products SET 
@@ -173,7 +209,7 @@ public class PromoCodeData
 
     }
 
-   
- 
-  
+
+
+
 }

@@ -143,28 +143,27 @@ public static class ProductData
             using SqlDataReader reader = await command.ExecuteReaderAsync();
             if (!await reader.ReadAsync())
             {
-                return null;
-            }
+                return new ProductDTO
+                {
+                    Id = reader.GetInt32(reader.GetOrdinal("id")),
+                    Name = reader.GetString(reader.GetOrdinal("name")),
+                    Count = reader.GetInt32(reader.GetOrdinal("count")),
+                    Price = reader.GetDecimal(reader.GetOrdinal("price")),
+                    CreateDate = reader.GetDateTime(reader.GetOrdinal("date")),
+                    UserId = reader.GetInt32(reader.GetOrdinal("userId")),
+                    CategoryId = reader.GetInt32(reader.GetOrdinal("categoryId")),
 
-            return new ProductDTO
-            {
-                Id = reader.GetInt32(reader.GetOrdinal("id")),
-                Name = reader.GetString(reader.GetOrdinal("name")),
-                Count = reader.GetInt32(reader.GetOrdinal("count")),
-                Price = reader.GetDecimal(reader.GetOrdinal("price")),
-                CreateDate = reader.GetDateTime(reader.GetOrdinal("date")),
-                UserId = reader.GetInt32(reader.GetOrdinal("userId")),
-                CategoryId = reader.GetInt32(reader.GetOrdinal("categoryId")),
-
-                Description = reader.IsDBNull(reader.GetOrdinal("description")) ?
+                    Description = reader.IsDBNull(reader.GetOrdinal("description")) ?
                  null : reader.GetString(reader.GetOrdinal("description")),
-            };
+                };
+            }
 
         }
         catch (Exception)
         {
             return null;
         }
+        return null;
     }
     public static async Task<AddEntityResult> Add(ProductDTO product)
     {

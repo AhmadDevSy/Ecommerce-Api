@@ -14,8 +14,8 @@ namespace Business_Layer.Business;
 
 public class Cart
 {
-    public int Id { get; set; }
-    public int UserId { get; set; }
+    public int Id { get; init; }
+    public int UserId { get; init; }
 
     private Cart(CartDTO dto)
     {
@@ -25,7 +25,7 @@ public class Cart
 
     public async Task<List<CartItemDTO>> GetItems()
     {
-         return await CartItemData.GetByCartId(this.Id);
+        return await CartItemData.GetByCartId(this.Id);
     }
 
     public static async Task<Cart> GetByCartId(int cartId)

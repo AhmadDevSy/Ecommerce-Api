@@ -25,7 +25,7 @@ public class CartsData
 
             SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
 
-            if (reader.HasRows)
+            if (await reader.ReadAsync())
             {
                 return new CartDTO
                 {
@@ -57,7 +57,7 @@ public class CartsData
 
             SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
 
-            if (reader.HasRows)
+            if (await reader.ReadAsync())
             {
                 return new CartDTO
                 {

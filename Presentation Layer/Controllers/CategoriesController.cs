@@ -39,7 +39,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateCategory(CategoryDTO dto)
+    public async Task<IActionResult> Add(CategoryDTO dto)
     {
         Category category = new Category()
         {
@@ -51,7 +51,10 @@ public class CategoriesController : ControllerBase
             return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
         }
 
-        return NoContent();
+        return Ok(new
+        {
+            CategoryId = category.Id
+        });
     }
 
     [HttpPut]

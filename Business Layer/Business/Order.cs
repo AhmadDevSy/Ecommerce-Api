@@ -5,147 +5,170 @@ using Options;
 using Models;
 using Data_Layer.Data;
 using System.Net.Http.Headers;
-using System.ClientModel.Primitives;
-using Microsoft.Extensions.Logging;
+using Enums;
+using Models.DTO;
+using Models.Enums;
+using Business_Layer.DTO;
 
 namespace Business_Layer.Business;
 
 public class Order
 {
-    public Order(
-        OrderData ordersData,
-        User usersBusiness,
-        CartItem cartItemBusiness,
-        InventoryKeyGenerator inventoryKeyGenerator,
-        ILogger<Order> logger,
-        StoreUrls storeUrls,
-        HttpClient httpClient
-        )
+    public int Id { get; init; }
+    public decimal TotalPrice { get; init; }
+    public int UserId { get; init; }
+    public OrderState State { get; protected set; }
+    public DateTime CreatedDate { get; init; }
+
+    public OrderDTO DTO => new OrderDTO()
     {
-        OrdersData = ordersData;
-        StoreUrls = storeUrls;
-        UsersBusiness = usersBusiness;
-        CartItemBusiness = cartItemBusiness;
-        InventoryKeyGenerator = inventoryKeyGenerator;
-        Logger = logger;
-        HttpClient = httpClient;
-    }
-
-    public OrderData OrdersData { get; }
-    public User UsersBusiness { get; }
-    public CartItem CartItemBusiness { get; }
-    public InventoryKeyGenerator InventoryKeyGenerator { get; }
-    public ILogger<Order> Logger { get; }
-    public StoreUrls StoreUrls { get; }
-    public HttpClient HttpClient { get; }
+        Id = this.Id,
+        StateId = (byte)this.State,
+        CreatedDate = this.CreatedDate,
+        UserId = this.UserId,
+        TotalPrice = this.TotalPrice
+    };
 
 
-
-    public async Task<OperationResult<Models.Order>> CreateOrder()
+    private Order(OrderDTO dto)
     {
-        OperationResult<Models.Order> operationResult = new();
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
-        {
-            operationResult.ErrorMessage = "Invalid user id";
-            return operationResult;
-        }
-
-
-        Models.Order order = await OrdersData.CreateOrder(userId);
-
-        if (order == null)
-        {
-            if (await CartItemBusiness.RemoveExpiredPromocode())
-            {
-                operationResult.ErrorMessage = "The quantity of products has been modified to match the quantity of the promo codes.";
-            }
-            else
-            {
-                operationResult.ErrorMessage = "Something went Wrong";
-            }
-
-            return operationResult;
-        }
-
-        bool BookedOrderSuccess = await CreateStoreOrder(order.Id);
-
-        if (!BookedOrderSuccess)
-        {
-            if (await CartItemBusiness.SyncCartItemsWithStocks())
-            {
-                operationResult.ErrorMessage = "The quantity of products has been modified to match the quantity of the stocks.";
-            }
-            else
-            {
-                operationResult.ErrorMessage = "Something went Wrong";
-            }
-
-            return operationResult;
-        }
-
-        operationResult.Success = true;
-        operationResult.Data = order;
-        return operationResult;
+        Id = dto.Id;
+        State = (OrderState)dto.StateId;
+        CreatedDate = dto.CreatedDate;
+        UserId = dto.UserId;
+        TotalPrice = dto.TotalPrice;
     }
 
 
-    public async Task<Models.Order> GetOrderById(int orderId)
+    public static async Task<CreateOrderOperation> Create(int userId)
     {
-        if (orderId < 1)
+        CreateOrderDatabaseOperation op = await OrderData.Create(userId);
+        Order order = null;
+
+        switch (op.Result)
+        {
+            case EnCreateOrderResult.Success:
+                {
+                    if (op.OrderDto != null)
+                    {
+                        order = new Order(op.OrderDto);
+                    }
+                    else
+                    {
+                        op.Result = EnCreateOrderResult.UnExpected;
+                    }
+                }
+                break;
+
+            case EnCreateOrderResult.CartNotFound:
+                {
+
+                }
+                break;
+
+            case EnCreateOrderResult.CartIsEmpty:
+                {
+
+                }
+                break;
+
+            case EnCreateOrderResult.InvalidPromocode:
+                {
+
+                }
+                break;
+
+            default:
+                {
+                    op.Result = EnCreateOrderResult.UnExpected;
+                }
+                break;
+        }
+
+        return new CreateOrderOperation()
+        {
+            Order = order,
+            Result = op.Result
+        };
+
+
+        //if (op.Result != EnCreateOrderResult.Success)
+        //{
+        //    if (await CartItemBusiness.RemoveExpiredPromocode())
+        //    {
+        //        operationResult.ErrorMessage = "The quantity of products has been modified to match the quantity of the promo codes.";
+        //    }
+        //    else
+        //    {
+        //        operationResult.ErrorMessage = "Something went Wrong";
+        //    }
+
+        //    return operationResult;
+        //}
+
+
+
+
+        //bool BookedOrderSuccess = await CreateStoreOrder(order.Id);
+
+        //if (!BookedOrderSuccess)
+        //{
+        //    if (await CartItemBusiness.SyncCartItemsWithStocks())
+        //    {
+        //        operationResult.ErrorMessage = "The quantity of products has been modified to match the quantity of the stocks.";
+        //    }
+        //    else
+        //    {
+        //        operationResult.ErrorMessage = "Something went Wrong";
+        //    }
+
+        //    return operationResult;
+        //}
+
+        //return op;
+    }
+
+
+
+    public static async Task<Order> GetById(int orderId)
+    {
+        OrderDTO dto = await OrderData.GetById(orderId);
+
+        if (dto == null)
         {
             return null;
         }
-
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
+        else
         {
-            return null;
+            return new Order(dto);
         }
-
-        return await OrdersData.GetOrderById(orderId, userId);
     }
 
-    public async Task<List<OrderDetails>> GetOrderDetails(int orderId)
+    public static async Task<List<OrderDTO>> GetByUserId(int userId)
     {
-        if (orderId < 1)
-        {
-            return null;
-        }
-
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId == 0)
-        {
-            return null;
-        }
-
-        return await OrdersData.GetOrderDetails(orderId, userId);
+        return await OrderData.GetByUserId(userId);
     }
 
-    public async Task<List<Models.Order>> GetMyOrders()
+    public async Task<bool> Cancel()
     {
-        int userId = UsersBusiness.GetUserId();
-
-        if (userId <= 0)
+        if (this.State != OrderState.New)
         {
-            return [];
+            return false;
         }
 
-        return await OrdersData.GetOrdersByUserId(userId);
+        return await OrderData.UpdateState(this.Id, (byte)OrderState.Cancelled);
     }
 
-    public async Task<List<Models.Order>> GetOrdersByUserId(int userId)
+    public async Task<bool> Complete()
     {
-        if (userId <= 0)
+        if (this.State != OrderState.New)
         {
-            return [];
+            return false;
         }
 
-        return await OrdersData.GetOrdersByUserId(userId);
+        return await OrderData.UpdateState(this.Id, (byte) OrderState.Completed);
     }
+
     public async Task<bool> CreateStoreOrder(int orderId)
     {
         if (orderId <= 0)
@@ -184,7 +207,6 @@ public class Order
             throw;
         }
     }
-
     public async Task<bool> ConfrimOrderInStore(int orderId)
     {
         if (orderId <= 0)
@@ -217,14 +239,8 @@ public class Order
             throw;
         }
     }
-
     private async Task<List<NewOrderRequest>> GetOrderItemQuantities(int orderId)
     {
-        if (orderId <= 0)
-        {
-            return [];
-        }
-
         return await OrdersData.GetOrderItemQuantities(orderId);
     }
 

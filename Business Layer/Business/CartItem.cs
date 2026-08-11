@@ -15,10 +15,10 @@ public class CartItem
 {
     private EnRecordMode Mode;
 
-    public int Id { get; private set; }
+    public int Id { get; protected set; }
     public int Count { get; set; }
-    public int CartId { get; set; }
-    public int ProductId { get; set; }
+    public int CartId { get; init; }
+    public int ProductId { get; init; }
     public int? PromoCodeId { get; private set; }
 
     public CartItemDTO DTO => new CartItemDTO
@@ -126,7 +126,7 @@ public class CartItem
             return false;
         }
 
-        if(promocode.Count < this.Count)
+        if(promocode.Count == 0)
         {
             return false;
         }

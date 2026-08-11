@@ -4,6 +4,10 @@ using Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Business_Layer.Business;
+using Presentation_Layer.Extensions;
+using Models.Enums;
+using Business_Layer.DTO;
+using Models.DTO;
 
 
 namespace Presentation_Layer.Controllers;
@@ -11,56 +15,108 @@ namespace Presentation_Layer.Controllers;
 
 [ApiController]
 [Route("api/order")]
-[Authorize]
 public class OrdersController : ControllerBase
 {
-    public ILogger<OrdersController> logger { get; }
-    public Business_Layer.Business.Order OrdersBusiness { get; }
-    public Business_Layer.Business.User UsersBusiness { get; }
-
-    public OrdersController (
-        ILogger<OrdersController> _logger,
-        Business_Layer.Business.Order ordersBusiness,
-        Business_Layer.Business.User usersBusiness
-        )
+    [HttpPost]
+    public async Task<IActionResult> Create()
     {
-        logger = _logger;
-        OrdersBusiness = ordersBusiness;
-        UsersBusiness = usersBusiness;
+        CreateOrderOperation op = await Order.Create(User.GetUserId());
+
+        switch (op.Result)
+        {
+            case EnCreateOrderResult.Success:
+                return CreatedAtAction(nameof(GetById), new { id = op.Order.Id }, op.Order);
+
+            case EnCreateOrderResult.CartNotFound:
+                return NotFound("Cart Not Found");
+
+            case EnCreateOrderResult.CartIsEmpty:
+                return BadRequest("Cart is empty");
+
+            case EnCreateOrderResult.InvalidPromocode:
+                return BadRequest("One or more promo codes are invalid");
+
+            default:
+                return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
+        }
     }
 
 
-
-    [CheckPermission(Permission.Orders_ViewOwnOrders)]
-    [HttpGet]
-    public async Task<ActionResult<List<Models.Order>>> GetMyOrders()
-    {
-        var orders = await OrdersBusiness.GetMyOrders();
-        return orders != null ?
-            Ok(orders) : NotFound();
-    }
-
-
-
-    [CheckPermission(Permission.Orders_ViewOwnOrders)]
     [HttpGet("{orderId}")]
-    public async Task<ActionResult<List<OrderDetails>>> GetMyOrderDetails(int orderId)
+    public async Task<ActionResult<List<OrderDetails>>> GetById(int orderId)
     {
-        var orders = await OrdersBusiness.GetOrderDetails(orderId);
-        return orders != null ?
-            Ok(orders) : NotFound();
+        Order order = await Order.GetById(orderId);
+
+        if (order == null)
+        {
+            return NotFound("Order not found");
+        }
+
+        return Ok(order);
     }
 
-
-
-    [CheckPermission(Permission.Orders_ViewUserOrders)]
-    [HttpGet("UserOrder/{id}")]
-    public async Task<ActionResult<List<Models.Order>>> GetOrdersByUserId(int id)
+    [HttpGet("items/{orderId}")]
+    public async Task<ActionResult<List<OrderDetails>>> GetOrderItems(int orderId)
     {
-        var orders = await OrdersBusiness.GetOrdersByUserId(id);
-        return orders != null ?
-            Ok(orders) : NotFound();
+        Order order = await Order.GetById(orderId);
+
+        if (order == null)
+        {
+            return NotFound("Order not found");
+        }
+
+        return Ok(await OrderItem.GetByOrderId(orderId) ?? []);
     }
 
+    [HttpGet("user/{userId}")]
+    public async Task<ActionResult<List<OrderDTO>>> GetOrdersByUserId(int userId)
+    {
+        return Ok(await Order.GetByUserId(userId) ?? []);
+    }
 
+    [HttpPatch("cancel/{orderId}")]
+    public async Task<ActionResult<List<OrderDTO>>> CancelOrder(int orderId)
+    {
+        Order order = await Order.GetById(orderId);
+
+        if (order == null)
+        {
+            return NotFound("Order not found");
+        }
+
+        if(order.State != OrderState.New)
+        {
+            return BadRequest("Cant change this order state");
+        }
+
+        if (!await order.Cancel())
+        {
+            return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        return NoContent();
+    }
+
+    [HttpPatch("complete/{orderId}")]
+    public async Task<ActionResult<List<OrderDTO>>> CompleteOrder(int orderId)
+    {
+        Order order = await Order.GetById(orderId);
+
+        if (order == null)
+        {
+            return NotFound("Order not found");
+        }
+
+        if (order.State != OrderState.New)
+        {
+            return BadRequest("Cant change this order state");
+        }
+
+        if (!await order.Complete())
+        {
+            return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        return NoContent();
+    }
 }
