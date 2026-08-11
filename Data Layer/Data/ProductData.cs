@@ -165,10 +165,8 @@ public static class ProductData
         }
         return null;
     }
-    public static async Task<AddEntityResult> Add(ProductDTO product)
+    public static async Task<int?> Add(ProductDTO product)
     {
-        AddEntityResult result = new AddEntityResult();
-
         string query = @"INSERT INTO Products
                              (name,description,price,categoryId,date,userId)
                              Values (@name,@description,@price,@categoryId,GETDATE(),@userId);
@@ -193,21 +191,19 @@ public static class ProductData
 
             if (obj == null || obj == DBNull.Value)
             {
-                result.Success = false;
+                return null;
             }
             else
             {
-                result.Success = true;
-                result.EntityId = Convert.ToInt32(obj);
+                return (int)obj;
             }
 
         }
         catch (Exception)
         {
-            result.Success = false;
         }
 
-        return result;
+        return null;
     }
     public static async Task<bool> Update(ProductDTO product)
     {

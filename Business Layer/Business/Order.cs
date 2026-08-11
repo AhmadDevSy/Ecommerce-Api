@@ -169,80 +169,80 @@ public class Order
         return await OrderData.UpdateState(this.Id, (byte) OrderState.Completed);
     }
 
-    public async Task<bool> CreateStoreOrder(int orderId)
-    {
-        if (orderId <= 0)
-        {
-            return false;
-        }
+    //public async Task<bool> CreateStoreOrder(int orderId)
+    //{
+    //    if (orderId <= 0)
+    //    {
+    //        return false;
+    //    }
 
-        var items = await GetOrderItemQuantities(orderId);
+    //    var items = await GetOrderItemQuantities(orderId);
 
-        if (items == null || items.Count == 0)
-        {
-            return false;
-        }
+    //    if (items == null || items.Count == 0)
+    //    {
+    //        return false;
+    //    }
 
-        try
-        {
-            string token = InventoryKeyGenerator.GenerateJwt();
+    //    try
+    //    {
+    //        string token = InventoryKeyGenerator.GenerateJwt();
 
-            HttpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
+    //        HttpClient.DefaultRequestHeaders.Authorization =
+    //            new AuthenticationHeaderValue("Bearer", token);
 
-            var json = JsonSerializer.Serialize(items);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await HttpClient.PostAsync(StoreUrls.BookingStocksRequest + $"{orderId}", content);
+    //        var json = JsonSerializer.Serialize(items);
+    //        var content = new StringContent(json, Encoding.UTF8, "application/json");
+    //        var response = await HttpClient.PostAsync(StoreUrls.BookingStocksRequest + $"{orderId}", content);
 
-            return response.StatusCode == System.Net.HttpStatusCode.OK;
-        }
-        catch (HttpRequestException ex)
-        {
-            Logger.LogWarning(ex, "Failed to create order with store service | Order Id: {orderId}", orderId);
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Unexpected error while createing order with store service | Order Id: {orderId}", orderId);
-            throw;
-        }
-    }
-    public async Task<bool> ConfrimOrderInStore(int orderId)
-    {
-        if (orderId <= 0)
-        {
-            return false;
-        }
+    //        return response.StatusCode == System.Net.HttpStatusCode.OK;
+    //    }
+    //    catch (HttpRequestException ex)
+    //    {
+    //        Logger.LogWarning(ex, "Failed to create order with store service | Order Id: {orderId}", orderId);
+    //        return false;
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        Logger.LogError(ex, "Unexpected error while createing order with store service | Order Id: {orderId}", orderId);
+    //        throw;
+    //    }
+    //}
+    //public async Task<bool> ConfrimOrderInStore(int orderId)
+    //{
+    //    if (orderId <= 0)
+    //    {
+    //        return false;
+    //    }
 
-        try
-        {
-            string token = InventoryKeyGenerator.GenerateJwt();
+    //    try
+    //    {
+    //        string token = InventoryKeyGenerator.GenerateJwt();
 
-            if (string.IsNullOrEmpty(token))
-            {
-                return false;
-            }
+    //        if (string.IsNullOrEmpty(token))
+    //        {
+    //            return false;
+    //        }
 
-            HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+    //        HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var response = await HttpClient.PatchAsync(StoreUrls.ConfrimOrder + $"{orderId}", null);
-            return response.StatusCode == System.Net.HttpStatusCode.OK;
-        }
-        catch (HttpRequestException ex)
-        {
-            Logger.LogWarning(ex, "Failed to confirm order with store service | Order Id: {orderId}", orderId);
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Unexpected error while confirming order with store service | Order Id: {orderId}", orderId);
-            throw;
-        }
-    }
-    private async Task<List<NewOrderRequest>> GetOrderItemQuantities(int orderId)
-    {
-        return await OrdersData.GetOrderItemQuantities(orderId);
-    }
+    //        var response = await HttpClient.PatchAsync(StoreUrls.ConfrimOrder + $"{orderId}", null);
+    //        return response.StatusCode == System.Net.HttpStatusCode.OK;
+    //    }
+    //    catch (HttpRequestException ex)
+    //    {
+    //        Logger.LogWarning(ex, "Failed to confirm order with store service | Order Id: {orderId}", orderId);
+    //        return false;
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        Logger.LogError(ex, "Unexpected error while confirming order with store service | Order Id: {orderId}", orderId);
+    //        throw;
+    //    }
+    //}
+    //private async Task<List<NewOrderRequest>> GetOrderItemQuantities(int orderId)
+    //{
+    //    return await OrdersData.GetOrderItemQuantities(orderId);
+    //}
 
 
 }

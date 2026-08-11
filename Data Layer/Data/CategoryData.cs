@@ -67,10 +67,8 @@ public class CategoryData
 
         return null;
     }
-    public static async Task<AddEntityResult> Add(CategoryDTO dto)
+    public static async Task<int?> Add(CategoryDTO dto)
     {
-        AddEntityResult result = new AddEntityResult();
-
         string query = @"INSERT INTO Categories (Name) VALUES (@Name);
                          SELECT CAST(scope_identity() AS int);";
         using var conn = new SqlConnection(ConnectionStrings.Default);
@@ -85,20 +83,19 @@ public class CategoryData
 
             if (obj == null || obj == DBNull.Value)
             {
-                result.Success = false;
+                return null;
             }
             else
             {
-                result.Success = true;
-                result.EntityId = (int)obj;
+                return (int)obj;
             }
         }
         catch (Exception ex)
         {
-            result.Success = false;
+           
         }
 
-        return result;
+        return null;
     }
     public static async Task<bool> Update(CategoryDTO dto)
     {

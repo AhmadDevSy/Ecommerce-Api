@@ -43,7 +43,7 @@ public class OrdersController : ControllerBase
 
 
     [HttpGet("{orderId}")]
-    public async Task<ActionResult<List<OrderDetails>>> GetById(int orderId)
+    public async Task<IActionResult> GetById(int orderId)
     {
         Order order = await Order.GetById(orderId);
 
@@ -56,7 +56,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("items/{orderId}")]
-    public async Task<ActionResult<List<OrderDetails>>> GetOrderItems(int orderId)
+    public async Task<IActionResult> GetOrderItems(int orderId)
     {
         Order order = await Order.GetById(orderId);
 
@@ -69,13 +69,13 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("user/{userId}")]
-    public async Task<ActionResult<List<OrderDTO>>> GetOrdersByUserId(int userId)
+    public async Task<IActionResult> GetOrdersByUserId(int userId)
     {
         return Ok(await Order.GetByUserId(userId) ?? []);
     }
 
     [HttpPatch("cancel/{orderId}")]
-    public async Task<ActionResult<List<OrderDTO>>> CancelOrder(int orderId)
+    public async Task<IActionResult> CancelOrder(int orderId)
     {
         Order order = await Order.GetById(orderId);
 

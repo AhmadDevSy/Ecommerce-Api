@@ -14,7 +14,6 @@ namespace Business_Layer.Business
     {
         private EnRecordMode Mode;
 
-
         public int Id { get; private set; }
         public string Url { get; set; }
         public int ProductId { get; set; }
@@ -66,10 +65,11 @@ namespace Business_Layer.Business
             {
                 case EnRecordMode.Add:
                     {
-                        AddEntityResult addResult = await ProductImageData.Add(this.DTO);
-                        if (addResult.Success)
+                        int? id = await ProductImageData.Add(this.DTO);
+
+                        if (id != null)
                         {
-                            this.Id = addResult.EntityId;
+                            this.Id = id.Value;
                             Mode = EnRecordMode.Update;
                             return true;
                         }

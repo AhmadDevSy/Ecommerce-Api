@@ -62,7 +62,7 @@ public class CartItem
         }
     }
 
-    public static async Task<CartItem> Get(int productId,int cartId)
+    public static async Task<CartItem> Get(int productId, int cartId)
     {
         CartItemDTO dto = await CartItemData.Get(productId, cartId);
 
@@ -82,10 +82,11 @@ public class CartItem
         {
             case EnRecordMode.Add:
                 {
-                    AddEntityResult addResult = await CartItemData.Add(this.DTO);
-                    if (addResult.Success)
+                    int? id = await CartItemData.Add(this.DTO);
+
+                    if (id != null)
                     {
-                        this.Id = addResult.EntityId;
+                        this.Id = id.Value;
                         Mode = EnRecordMode.Update;
                         return true;
                     }
@@ -126,7 +127,7 @@ public class CartItem
             return false;
         }
 
-        if(promocode.Count == 0)
+        if (promocode.Count == 0)
         {
             return false;
         }

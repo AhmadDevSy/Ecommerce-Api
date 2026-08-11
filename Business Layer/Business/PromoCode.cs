@@ -127,11 +127,11 @@ public class PromoCode
         {
             case EnRecordMode.Add:
                 {
-                    AddEntityResult addResult = await PromoCodeData.Add(this.DTO);
-                    if (addResult.Success)
-                    {
-                        this.Id = addResult.EntityId;
+                    int? id = await PromoCodeData.Add(this.DTO);
 
+                    if (id != null)
+                    {
+                        this.Id = id.Value;
                         Mode = EnRecordMode.Update;
                         return true;
                     }

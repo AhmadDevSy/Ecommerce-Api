@@ -61,10 +61,11 @@ public class Category
         {
             case EnRecordMode.Add:
                 {
-                    AddEntityResult addResult = await CategoryData.Add(this.DTO);
-                    if (addResult.Success)
+                    int? id = await CategoryData.Add(this.DTO);
+
+                    if (id != null)
                     {
-                        this.Id = addResult.EntityId;
+                        this.Id = id.Value;
                         Mode = EnRecordMode.Update;
                         return true;
                     }

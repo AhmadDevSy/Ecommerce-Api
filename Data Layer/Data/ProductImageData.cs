@@ -49,12 +49,9 @@ namespace Data_Layer.Data
             return new ProductImageDTO();
         }
 
-        public static async Task<AddEntityResult> Add(ProductImageDTO dto)
+        public static async Task<int?> Add(ProductImageDTO dto)
         {
-            AddEntityResult result = new AddEntityResult();
-
-
-            return result;
+            return 0;
         }
 
         public static async Task<bool> Update(ProductImageDTO dto)

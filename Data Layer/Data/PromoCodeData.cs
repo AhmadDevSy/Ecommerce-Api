@@ -34,7 +34,7 @@ public class PromoCodeData
                     Code = reader.GetString(reader.GetOrdinal("Code")),
                     Discount = reader.GetDecimal(reader.GetOrdinal("Discount")),
                     ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
-                    TypeId = reader.GetInt32(reader.GetOrdinal("TypeId")),
+                    TypeId = reader.GetByte(reader.GetOrdinal("TypeId")),
                     ExpiryDate = reader.GetDateTime(reader.GetOrdinal("ExpiryDate")),
                     Count = reader.GetInt32(reader.GetOrdinal("Count")),
                     IsEnable = reader.GetBoolean(reader.GetOrdinal("IsEnable")),
@@ -72,7 +72,7 @@ public class PromoCodeData
                     Code = reader.GetString(reader.GetOrdinal("Code")),
                     Discount = reader.GetDecimal(reader.GetOrdinal("Discount")),
                     ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
-                    TypeId = reader.GetInt32(reader.GetOrdinal("TypeId")),
+                    TypeId = reader.GetByte(reader.GetOrdinal("TypeId")),
                     ExpiryDate = reader.GetDateTime(reader.GetOrdinal("ExpiryDate")),
                     Count = reader.GetInt32(reader.GetOrdinal("Count")),
                     IsEnable = reader.GetBoolean(reader.GetOrdinal("IsEnable")),
@@ -111,7 +111,7 @@ public class PromoCodeData
                     Code = reader.GetString(reader.GetOrdinal("Code")),
                     Discount = reader.GetDecimal(reader.GetOrdinal("Discount")),
                     ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
-                    TypeId = reader.GetInt32(reader.GetOrdinal("TypeId")),
+                    TypeId = reader.GetByte(reader.GetOrdinal("TypeId")),
                     ExpiryDate = reader.GetDateTime(reader.GetOrdinal("ExpiryDate")),
                     Count = reader.GetInt32(reader.GetOrdinal("Count")),
                     IsEnable = reader.GetBoolean(reader.GetOrdinal("IsEnable")),
@@ -127,9 +127,8 @@ public class PromoCodeData
 
         return result;
     }
-    public static async Task<AddEntityResult> Add(PromoCodeDTO dto)
+    public static async Task<int?> Add(PromoCodeDTO dto)
     {
-        AddEntityResult result = new AddEntityResult();
 
         string query = @"INSERT INTO PromoCodes
                              (Code,UserId,ProductId,Discount,Count,ExpiryDate,TypeId,IsEnable)
@@ -157,21 +156,19 @@ public class PromoCodeData
 
             if (obj == null || obj == DBNull.Value)
             {
-                result.Success = false;
+                return null;
             }
             else
             {
-                result.Success = true;
-                result.EntityId = Convert.ToInt32(obj);
+                return (int)obj;
             }
 
         }
         catch (Exception)
         {
-            result.Success = false;
         }
 
-        return result;
+        return null;
     }
     public static async Task<bool> Update(PromoCodeDTO dto)
     {

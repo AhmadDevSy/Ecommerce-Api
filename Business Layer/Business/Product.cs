@@ -113,13 +113,12 @@ public class Product
         {
             case EnRecordMode.Add:
                 {
-                    AddEntityResult addResult = await ProductData.Add(this.DTO);
-                    if (addResult.Success)
+                    int? id = await ProductData.Add(this.DTO);
+
+                    if (id != null)
                     {
-                        this.Id = addResult.EntityId;
-
-                        await this.SendNewProductInfoToWarehouse();
-
+                        this.Id = id.Value;
+                        await SendNewProductInfoToWarehouse();
                         Mode = EnRecordMode.Update;
                         return true;
                     }

@@ -24,15 +24,17 @@ public class CartItemData
         {
             await conn.OpenAsync();
             using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
-            if (await reader.ReadAsync()) 
+            if (await reader.ReadAsync())
             {
                 return new CartItemDTO
                 {
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
                     ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
                     Count = reader.GetInt32(reader.GetOrdinal("Count")),
-                    PromoCodeId = reader.GetInt32(reader.GetOrdinal("PromoCodeId")),
-                    CartId = reader.GetInt32(reader.GetOrdinal("CartId"))
+                    CartId = reader.GetInt32(reader.GetOrdinal("CartId")),
+
+                    PromoCodeId = reader.IsDBNull(reader.GetOrdinal("PromoCodeId"))
+                    ? (int?)null : reader.GetInt32(reader.GetOrdinal("PromoCodeId"))
                 };
             }
 
@@ -58,15 +60,17 @@ public class CartItemData
         {
             await conn.OpenAsync();
             using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
-             if (await reader.ReadAsync())
+            if (await reader.ReadAsync())
             {
                 return new CartItemDTO
                 {
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
                     ProductId = productId,
                     Count = reader.GetInt32(reader.GetOrdinal("Count")),
-                    PromoCodeId = reader.GetInt32(reader.GetOrdinal("PromoCodeId")),
-                    CartId = cartId
+                    CartId = cartId,
+
+                    PromoCodeId = reader.IsDBNull(reader.GetOrdinal("PromoCodeId"))
+                    ? (int?)null : reader.GetInt32(reader.GetOrdinal("PromoCodeId"))
                 };
             }
 
@@ -100,8 +104,9 @@ public class CartItemData
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
                     ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
                     Count = reader.GetInt32(reader.GetOrdinal("Count")),
-                    PromoCodeId = reader.GetInt32(reader.GetOrdinal("PromoCodeId")),
-                    CartId = cartId
+                    CartId = cartId,
+                    PromoCodeId = reader.IsDBNull(reader.GetOrdinal("PromoCodeId"))
+                    ? (int?)null : reader.GetInt32(reader.GetOrdinal("PromoCodeId"))
                 });
             }
 
@@ -113,10 +118,8 @@ public class CartItemData
         }
     }
 
-    public static async Task<AddEntityResult> Add(CartItemDTO dto)
+    public static async Task<int?> Add(CartItemDTO dto)
     {
-        AddEntityResult result = new AddEntityResult();
-
         using SqlConnection sqlConnect = new SqlConnection(ConnectionStrings.Default);
         using SqlCommand sqlcommand = new SqlCommand("AddItemToCart", sqlConnect);
         sqlcommand.CommandType = CommandType.StoredProcedure;
@@ -131,19 +134,18 @@ public class CartItemData
 
             if (obj == null || obj == DBNull.Value)
             {
-                result.Success = false;
+                return null;
             }
             else
             {
-                result.Success = true;
-                result.EntityId = Convert.ToInt32(obj);
+                return (int)obj;
             }
         }
         catch (Exception ex)
         {
         }
 
-        return result;
+        return null;
 
     }
     public static async Task<bool> Update(CartItemDTO dto)

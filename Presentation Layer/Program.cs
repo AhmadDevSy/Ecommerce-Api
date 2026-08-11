@@ -1,12 +1,10 @@
 
 using Business_Layer.Business;
-using Business_Layer.Business.Abstracts;
-using Business_Layer.SearchTries;
-using Business_Layer.Timer;
 using Data_Layer.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Options;
 using Presentation_Layer.Authorization;
 using System.Text;
@@ -15,65 +13,78 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 
-var connectionString = builder.Configuration.GetConnectionString("Default");
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+
+            ValidIssuer = builder.Configuration["Issuer"],
+            ValidAudience = builder.Configuration["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["SigningKey"]))
+        };
+    });
+
+
+builder.Services.AddAuthorization();
+builder.Services.AddControllers();
+
+
 var jwtOption = builder.Configuration.GetSection("Jwt").Get<JwtOptions>();
 var paypalOptions = builder.Configuration.GetSection("PayPalKeys").Get<PaypalOptions>();
 var paypalUrls = builder.Configuration.GetSection("Urls").Get<PaypalUrls>();
 var storeUrls = builder.Configuration.GetSection("StoreUrls").Get<StoreUrls>();
 var inventoryOptions = builder.Configuration.GetSection("Ecommerce_Inventory_Shared_Key").Get<InventoryOptions>();
-var cacheKeys = builder.Configuration.GetSection("CacheKeys").Get<CacheKeys>();
 
-builder.Services.AddSingleton<string>(connectionString);
 builder.Services.AddSingleton<JwtOptions>(jwtOption);
 builder.Services.AddSingleton<PaypalOptions>(paypalOptions);
 builder.Services.AddSingleton<PaypalUrls>(paypalUrls);
 builder.Services.AddSingleton<StoreUrls>(storeUrls);
 builder.Services.AddSingleton<InventoryOptions>(inventoryOptions);
-builder.Services.AddSingleton<CacheKeys>(cacheKeys);
 
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Bearer {your token}"
+    });
 
-
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddHttpClient();
-
-builder.Services.AddScoped<ImagesBusiness>();
-builder.Services.AddScoped<User>();
-builder.Services.AddScoped<CartItem>();
-builder.Services.AddScoped<Cart>();
-builder.Services.AddScoped<Category>();
-builder.Services.AddScoped<Product>();
-builder.Services.AddScoped<PayPalBusiness>();
-builder.Services.AddScoped<PromoCode>();
-builder.Services.AddScoped<SalesBusiness>();
-builder.Services.AddScoped<Order>();
-builder.Services.AddScoped<EmailBusiness>();
-builder.Services.AddScoped<SellerBusiness>();
-builder.Services.AddScoped<AuthorizeBusiness>();
-builder.Services.AddScoped<InventoryKeyGenerator>();
-builder.Services.AddSingleton<FileSystem>();
-
-builder.Services.AddScoped<UsersData>();
-builder.Services.AddScoped<CartItemData>();
-builder.Services.AddScoped<CartsData>();
-builder.Services.AddScoped<CategoryData>();
-builder.Services.AddScoped<ProductData>();
-builder.Services.AddScoped<PayPalData>();
-builder.Services.AddScoped<PromoCodeData>();
-builder.Services.AddScoped<SalesData>();
-builder.Services.AddScoped<OrderData>();
-builder.Services.AddScoped<SellerData>();
-builder.Services.AddScoped<EmailData>();
-builder.Services.AddScoped<AuthorizeData>();
-
-
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 var app = builder.Build();
 
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
+app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
