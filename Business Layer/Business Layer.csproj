@@ -19,7 +19,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Data Layer\Data Layer.csproj" />
-    <ProjectReference Include="..\Options\Options.csproj" />
   </ItemGroup>
 
 </Project>

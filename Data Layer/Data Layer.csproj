@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Models\Models.csproj" />
-    <ProjectReference Include="..\Options\Options.csproj" />
   </ItemGroup>
 
 </Project>

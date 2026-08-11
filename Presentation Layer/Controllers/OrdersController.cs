@@ -8,6 +8,7 @@ using Presentation_Layer.Extensions;
 using Models.Enums;
 using Business_Layer.DTO;
 using Models.DTO;
+using Business_Layer.Services;
 
 
 namespace Presentation_Layer.Controllers;
@@ -17,6 +18,13 @@ namespace Presentation_Layer.Controllers;
 [Route("api/order")]
 public class OrdersController : ControllerBase
 {
+    private readonly WarehouseService _warehouseService;
+
+    public OrdersController(WarehouseService warehouseService)
+    {
+        _warehouseService = warehouseService;
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create()
     {
@@ -25,7 +33,13 @@ public class OrdersController : ControllerBase
         switch (op.Result)
         {
             case EnCreateOrderResult.Success:
-                return CreatedAtAction(nameof(GetById), new { id = op.Order.Id }, op.Order);
+                {
+                    if (op.Order == null)
+                        return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
+
+                    await _warehouseService.SendOrderInfoToWarehouseAsync(op.Order.Id);
+                    return CreatedAtAction(nameof(GetById), new { id = op.Order.Id }, op.Order);
+                }
 
             case EnCreateOrderResult.CartNotFound:
                 return NotFound("Cart Not Found");
@@ -84,7 +98,7 @@ public class OrdersController : ControllerBase
             return NotFound("Order not found");
         }
 
-        if(order.State != OrderState.New)
+        if (order.State != OrderState.New)
         {
             return BadRequest("Cant change this order state");
         }

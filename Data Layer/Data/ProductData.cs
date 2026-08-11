@@ -3,8 +3,8 @@ using Microsoft.Data.SqlClient;
 using System.Data;
 using Models;
 using Models.DTO;
-using Options;
 using System.Collections.Generic;
+using Data_Layer.Options;
 
 
 namespace Data_Layer.Data;
@@ -224,6 +224,25 @@ public static class ProductData
         {
             await sqlConnect.OpenAsync();
             return await sqlcommand.ExecuteNonQueryAsync() > 0;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+
+    }
+    public static async Task<bool> Exists(int productId)
+    {
+        string query = @"SELECT 1 FROM Products WHERE Id=@Id";
+
+        using SqlConnection sqlConnect = new SqlConnection(ConnectionStrings.Default);
+        using SqlCommand sqlcommand = new SqlCommand(query, sqlConnect);
+
+        try
+        {
+            await sqlConnect.OpenAsync();
+            var obj = await sqlcommand.ExecuteScalarAsync();
+            return obj != null && obj != DBNull.Value;
         }
         catch (Exception)
         {

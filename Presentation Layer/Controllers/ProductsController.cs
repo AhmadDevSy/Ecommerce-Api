@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Business_Layer.Business;
 using Models.DTO;
 using Data_Layer.Data;
+using Business_Layer.Services;
 
 
 namespace Presentation_Layer.Controllers;
@@ -14,6 +15,14 @@ namespace Presentation_Layer.Controllers;
 [Route("api/product")]
 public class ProductsController : ControllerBase
 {
+    private readonly WarehouseService _warehouseService;
+
+    public ProductsController(WarehouseService warehouseService)
+    {
+        this._warehouseService = warehouseService;
+    }
+
+
     [HttpGet("catalog")]
     public async Task<IActionResult> GetProductsCatalog([FromQuery] int lastSeenId, [FromQuery] int? categoryId)
     {
@@ -105,6 +114,8 @@ public class ProductsController : ControllerBase
         {
             return BadRequest();
         }
+
+        await _warehouseService.SendProductInfoToWarehouseAsync(product.DTO);
 
         return Ok(new
         {
@@ -200,16 +211,14 @@ public class ProductsController : ControllerBase
     [HttpPost("send-add-quantity-request/{productId}")]
     public async Task<IActionResult> SendAddQuantityRequest(ProductQuantity request, int productId)
     {
-        Product product = await Product.GetById(productId);
-
-        if (product == null)
+        if (!await Product.Exists(productId))
         {
-            return NotFound("Product Not Found");
+            return NotFound("Product not found");
         }
 
-        if (!await product.SendAddQuantityRequest(request))
+        if (!await _warehouseService.SendAddQuantityRequestAsync(productId, request))
         {
-            return Problem("Send Add Quantity Request Failed.", statusCode: StatusCodes.Status500InternalServerError);
+            return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
         }
 
         return NoContent();

@@ -38,6 +38,28 @@ public class PromocodeController : ControllerBase
         });
     }
 
+    [HttpPut]
+    public async Task<IActionResult> Update(PromoCodeDTO dto)
+    {
+        PromoCode promocode = await PromoCode.GetById(dto.Id);
+
+        if(promocode == null)
+        {
+            return NotFound("Promocode not found");
+        }
+
+        promocode.ExpiryDate = dto.ExpiryDate;
+        promocode.Count = dto.Count;
+        promocode.IsEnable = dto.IsEnable;
+
+        if (!await promocode.Save())
+        {
+            return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        return NoContent();
+    }
+
     [HttpGet("{userId}")]
     public async Task<IActionResult> GetByUserId(int userId)
     {
@@ -51,10 +73,10 @@ public class PromocodeController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPatch("{id}")]
-    public async Task<IActionResult> Toggle(int id)
+    [HttpPatch("toggle/{promocodeId}")]
+    public async Task<IActionResult> Toggle(int promocodeId)
     {
-        PromoCode promocode = await PromoCode.GetById(id);
+        PromoCode promocode = await PromoCode.GetById(promocodeId);
 
         if(promocode == null)
         {

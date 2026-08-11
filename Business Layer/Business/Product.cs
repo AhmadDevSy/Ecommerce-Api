@@ -92,10 +92,15 @@ public class Product
         }
     }
 
+    public static async Task<bool> Exists(int productId)
+    {
+        return await ProductData.Exists(productId);
+    }
+
     public static async Task<List<ProductDTO>> GetProductsByUserId(int userId)
     {
         return await ProductData.GetProductsByUserId(userId);
-    } 
+    }
 
     public static async Task<List<ProductDTO>> GetProductsCatalog(int lastSeenId)
     {
@@ -118,7 +123,6 @@ public class Product
                     if (id != null)
                     {
                         this.Id = id.Value;
-                        await SendNewProductInfoToWarehouse();
                         Mode = EnRecordMode.Update;
                         return true;
                     }
@@ -168,62 +172,6 @@ public class Product
         }
     }
 
-    public async Task<bool> SendAddQuantityRequest(ProductQuantity request)
-    {
-        try
-        {
-            HttpClient client = new HttpClient()
-            {
-                BaseAddress = new Uri("Warehouse/Product-API-Uri")
-            };
-
-            //HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var json = JsonSerializer.Serialize(request);
-            var body = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync($"AddStockQuantity-Endpoint/{this.Id}", body);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return false;
-            }
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            return false;
-        }
-    }
-
-    private async Task SendNewProductInfoToWarehouse()
-    {
-        try
-        {
-            HttpClient client = new HttpClient()
-            {
-                BaseAddress = new Uri("Warehouse/Product-API-Uri")
-            };
-
-            // HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var json = JsonSerializer.Serialize(this.DTO);
-            var body = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync($"Map-Product-Info-Endpoint/{this.Id}", body);
-
-            if (!response.IsSuccessStatusCode)
-            {
-
-            }
-
-        }
-        catch (Exception ex)
-        {
-
-        }
-
-    }
+   
 
 }

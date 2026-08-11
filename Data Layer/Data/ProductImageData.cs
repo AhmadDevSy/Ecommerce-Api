@@ -1,7 +1,7 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Data_Layer.Options;
+using Microsoft.Data.SqlClient;
 using Models;
 using Models.DTO;
-using Options;
 using System;
 using System.Collections.Generic;
 using System.Data;

@@ -1,9 +1,9 @@
 ﻿using System.Data;
+using Data_Layer.Options;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Models;
 using Models.DTO;
-using Options;
 
 namespace Data_Layer.Data;
 
