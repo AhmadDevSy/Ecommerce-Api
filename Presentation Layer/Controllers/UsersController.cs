@@ -16,7 +16,7 @@ using BCryptHelper = BCrypt.Net.BCrypt;
 
 
 [ApiController]
-[Route("api/user")]
+[Route("api/users")]
 public class UsersController : ControllerBase
 {
     [AllowAnonymous]

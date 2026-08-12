@@ -1,7 +1,6 @@
 ﻿
 using System.Text;
 using System.Text.Json;
-using Options;
 using Models;
 using Data_Layer.Data;
 using System.Net.Http.Headers;
@@ -40,49 +39,14 @@ public class Order
     }
 
 
-    public static async Task<CreateOrderOperation> Create(int userId)
+    public static async Task<CreateOrderOperation> Create(int cartId)
     {
-        CreateOrderDatabaseOperation op = await OrderData.Create(userId);
+        CreateOrderDatabaseOperation op = await OrderData.Create(cartId);
         Order order = null;
 
-        switch (op.Result)
+        if (op.OrderDto != null)
         {
-            case EnCreateOrderResult.Success:
-                {
-                    if (op.OrderDto != null)
-                    {
-                        order = new Order(op.OrderDto);
-                    }
-                    else
-                    {
-                        op.Result = EnCreateOrderResult.UnExpected;
-                    }
-                }
-                break;
-
-            case EnCreateOrderResult.CartNotFound:
-                {
-
-                }
-                break;
-
-            case EnCreateOrderResult.CartIsEmpty:
-                {
-
-                }
-                break;
-
-            case EnCreateOrderResult.InvalidPromocode:
-                {
-
-                }
-                break;
-
-            default:
-                {
-                    op.Result = EnCreateOrderResult.UnExpected;
-                }
-                break;
+            order = new Order(op.OrderDto);
         }
 
         return new CreateOrderOperation()
@@ -90,45 +54,7 @@ public class Order
             Order = order,
             Result = op.Result
         };
-
-
-        //if (op.Result != EnCreateOrderResult.Success)
-        //{
-        //    if (await CartItemBusiness.RemoveExpiredPromocode())
-        //    {
-        //        operationResult.ErrorMessage = "The quantity of products has been modified to match the quantity of the promo codes.";
-        //    }
-        //    else
-        //    {
-        //        operationResult.ErrorMessage = "Something went Wrong";
-        //    }
-
-        //    return operationResult;
-        //}
-
-
-
-
-        //bool BookedOrderSuccess = await CreateStoreOrder(order.Id);
-
-        //if (!BookedOrderSuccess)
-        //{
-        //    if (await CartItemBusiness.SyncCartItemsWithStocks())
-        //    {
-        //        operationResult.ErrorMessage = "The quantity of products has been modified to match the quantity of the stocks.";
-        //    }
-        //    else
-        //    {
-        //        operationResult.ErrorMessage = "Something went Wrong";
-        //    }
-
-        //    return operationResult;
-        //}
-
-        //return op;
     }
-
-
 
     public static async Task<Order> GetById(int orderId)
     {
@@ -151,7 +77,7 @@ public class Order
 
     public async Task<bool> Cancel()
     {
-        if (this.State != OrderState.New)
+        if (this.State != OrderState.Pending)
         {
             return false;
         }
@@ -161,12 +87,11 @@ public class Order
 
     public async Task<bool> Complete()
     {
-        if (this.State != OrderState.New)
+        if (this.State != OrderState.Pending)
         {
             return false;
         }
 
         return await OrderData.UpdateState(this.Id, (byte)OrderState.Completed);
     }
-
 }

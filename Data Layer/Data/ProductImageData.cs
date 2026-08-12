@@ -46,17 +46,20 @@ namespace Data_Layer.Data
         }
         public static async Task<ProductImageDTO> GetById(int imageId)
         {
-            return new ProductImageDTO();
+            throw new NotImplementedException();
+
         }
 
         public static async Task<int?> Add(ProductImageDTO dto)
         {
-            return 0;
+            throw new NotImplementedException();
+
         }
 
         public static async Task<bool> Update(ProductImageDTO dto)
         {
-            return true;
+            throw new NotImplementedException();
+
         }
     }
 }

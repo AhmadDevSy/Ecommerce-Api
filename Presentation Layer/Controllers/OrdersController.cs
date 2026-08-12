@@ -9,51 +9,92 @@ using Models.Enums;
 using Business_Layer.DTO;
 using Models.DTO;
 using Business_Layer.Services;
+using Models.Requests;
 
 
 namespace Presentation_Layer.Controllers;
 
-
+[Authorize]
 [ApiController]
-[Route("api/order")]
+[Route("api/orders")]
 public class OrdersController : ControllerBase
 {
     private readonly WarehouseService _warehouseService;
 
-    public OrdersController(WarehouseService warehouseService)
+    private readonly StripePaymentService _stripeService;
+
+    public OrdersController(WarehouseService warehouseService, StripePaymentService stripeService)
     {
         _warehouseService = warehouseService;
+        _stripeService = stripeService;
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create()
+
+    [HttpPost("checkout")]
+    public async Task<IActionResult> Create([FromBody] PaymentRequest request)
     {
-        CreateOrderOperation op = await Order.Create(User.GetUserId());
+        Cart cart = await Cart.GetByUserId(User.GetUserId());
+
+        if (cart == null)
+        {
+            return NotFound("Cart Not Found");
+        }
+
+        CreateOrderOperation op = await Order.Create(cart.Id);
+
 
         switch (op.Result)
         {
             case EnCreateOrderResult.Success:
                 {
-                    if (op.Order == null)
+                    if(op.Order == null)
+                    {
                         return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
+                    }
 
-                    await _warehouseService.SendOrderInfoToWarehouseAsync(op.Order.Id);
-                    return CreatedAtAction(nameof(GetById), new { id = op.Order.Id }, op.Order);
+                    if (await _warehouseService.ReserveProductsInWarehouseAsync(op.Order.Id))
+                    {
+                        var sessionUrl = await _stripeService.CreateCheckoutSessionAsync(
+                            request.SuccessUrl,
+                            request.CancelUrl,
+                            op.Order.TotalPrice
+                        );
+                        return Ok(new { sessionId = sessionUrl });
+                    }
+                    else
+                    {
+                        await op.Order.Cancel();
+                        return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
+                    }
                 }
 
             case EnCreateOrderResult.CartNotFound:
-                return NotFound("Cart Not Found");
+                {
+                    return NotFound("Cart Not Found");
+                }
 
             case EnCreateOrderResult.CartIsEmpty:
-                return BadRequest("Cart is empty");
+                {
+                    return BadRequest("Cart is empty");
+                }
 
             case EnCreateOrderResult.InvalidPromocode:
-                return BadRequest("One or more promo codes are invalid");
+                {
+                    await cart.RemoveExpiredPromocodesAsync();
+                    return BadRequest("One or more promo codes are no longer valid. Your cart has been updated to remove them");
+                }
+
+            case EnCreateOrderResult.DemandExceededQuantity:
+                {
+                    await cart.SyncCartQuantityWithStockAsync();
+                    return BadRequest("The requested quantity exceeds available stock. Your cart has been updated accordingly");
+                }
 
             default:
                 return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
         }
     }
+
 
 
     [HttpGet("{orderId}")]
@@ -69,6 +110,8 @@ public class OrdersController : ControllerBase
         return Ok(order);
     }
 
+
+
     [HttpGet("items/{orderId}")]
     public async Task<IActionResult> GetOrderItems(int orderId)
     {
@@ -82,11 +125,15 @@ public class OrdersController : ControllerBase
         return Ok(await OrderItem.GetByOrderId(orderId) ?? []);
     }
 
+
+
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetOrdersByUserId(int userId)
     {
         return Ok(await Order.GetByUserId(userId) ?? []);
     }
+
+
 
     [HttpPatch("cancel/{orderId}")]
     public async Task<IActionResult> CancelOrder(int orderId)
@@ -98,7 +145,7 @@ public class OrdersController : ControllerBase
             return NotFound("Order not found");
         }
 
-        if (order.State != OrderState.New)
+        if (order.State != OrderState.Pending)
         {
             return BadRequest("Cant change this order state");
         }
@@ -111,6 +158,8 @@ public class OrdersController : ControllerBase
         return NoContent();
     }
 
+
+
     [HttpPatch("complete/{orderId}")]
     public async Task<ActionResult<List<OrderDTO>>> CompleteOrder(int orderId)
     {
@@ -121,7 +170,7 @@ public class OrdersController : ControllerBase
             return NotFound("Order not found");
         }
 
-        if (order.State != OrderState.New)
+        if (order.State != OrderState.Pending)
         {
             return BadRequest("Cant change this order state");
         }

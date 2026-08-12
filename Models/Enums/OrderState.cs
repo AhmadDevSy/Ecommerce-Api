@@ -2,7 +2,8 @@
 
 public enum OrderState
 {
-    New = 1,
+    Pending = 1,
     Cancelled = 2,
-    Completed = 3
+    Processing = 3,
+    Completed = 4
 }

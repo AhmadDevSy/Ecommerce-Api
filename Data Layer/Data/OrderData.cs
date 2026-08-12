@@ -47,7 +47,7 @@ public class OrderData
         }
         return null;
     }
-    public static async Task<CreateOrderDatabaseOperation> Create(int userId)
+    public static async Task<CreateOrderDatabaseOperation> Create(int cartId)
     {
         CreateOrderDatabaseOperation result = new CreateOrderDatabaseOperation();
 
@@ -55,7 +55,7 @@ public class OrderData
         using SqlCommand command = new SqlCommand("dbo.CreateOrder", connection);
         command.CommandType = CommandType.StoredProcedure;
 
-        command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = userId });
+        command.Parameters.Add(new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
 
         try
         {
@@ -69,7 +69,7 @@ public class OrderData
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
                     UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
                     TotalPrice = reader.GetDecimal(reader.GetOrdinal("TotalPrice")),
-                    CreatedDate = reader.GetDateTime(reader.GetOrdinal("OrderDate")),
+                    CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
                     StateId = reader.GetByte(reader.GetOrdinal("StateId"))
                 };
 

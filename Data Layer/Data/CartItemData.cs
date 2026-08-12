@@ -104,7 +104,7 @@ public class CartItemData
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
                     ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
                     Count = reader.GetInt32(reader.GetOrdinal("Count")),
-                    CartId = cartId,
+                    CartId = reader.GetInt32(reader.GetOrdinal("CartId")),
                     PromoCodeId = reader.IsDBNull(reader.GetOrdinal("PromoCodeId"))
                     ? (int?)null : reader.GetInt32(reader.GetOrdinal("PromoCodeId"))
                 });

@@ -12,6 +12,7 @@ namespace Models.Enums
         UnExpected = 666,
         CartNotFound = 50000,
         CartIsEmpty = 50001,
-        InvalidPromocode = 50002
+        InvalidPromocode = 50002,
+        DemandExceededQuantity = 50003,
     }
 }

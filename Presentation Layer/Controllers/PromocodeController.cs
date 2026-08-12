@@ -9,7 +9,7 @@ using Business_Layer.Business;
 namespace Presentation_Layer.Controllers;
 
 [ApiController]
-[Route("api/promocode")]
+[Route("api/promocodes")]
 public class PromocodeController : ControllerBase
 {
     [HttpPost]

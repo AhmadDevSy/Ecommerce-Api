@@ -12,7 +12,7 @@ namespace Presentation_Layer.Controllers;
 
 
 [ApiController]
-[Route("api/cart")]
+[Route("api/carts")]
 public class CartsController : ControllerBase
 {
     [HttpGet("items")]

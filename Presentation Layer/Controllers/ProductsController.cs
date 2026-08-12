@@ -12,7 +12,7 @@ using Business_Layer.Services;
 namespace Presentation_Layer.Controllers;
 
 [ApiController]
-[Route("api/product")]
+[Route("api/products")]
 public class ProductsController : ControllerBase
 {
     private readonly WarehouseService _warehouseService;

@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using Stripe;
+using Business_Layer.Services;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -71,11 +74,22 @@ builder.Services.AddControllers();
 
 builder.Services.AddHttpClient("WarehouseService", client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["WarehouseApi:BaseUrl"]);
+    client.BaseAddress = new Uri(builder.Configuration["WarehouseApiBaseUrl"]);
 }).AddAsKeyed();
 
-//====================================================================================//
+StripeConfiguration.ApiKey = builder.Configuration["StripeSecretKey"];
 
+builder.Services.AddScoped<StripePaymentService>();
+builder.Services.AddScoped<WarehouseService>();
+
+
+
+
+
+
+
+
+//====================================================================================//
 
 //Pipeline
 var app = builder.Build();

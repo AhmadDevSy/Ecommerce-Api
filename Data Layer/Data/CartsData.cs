@@ -190,4 +190,14 @@ public class CartsData
         return 0;
     }
 
+    public static Task<bool> RemoveExpiredPromocodesAsync(int cartId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static Task<bool> SyncCartQuantityWithStockAsync(int cartId)
+    {
+        throw new NotImplementedException();
+    }
+
 }

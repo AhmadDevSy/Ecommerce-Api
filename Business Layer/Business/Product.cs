@@ -5,7 +5,6 @@ using Enums;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using System.Text;
-using Options;
 using System.Net;
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Logging;

@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Models;
 using Models.DTO;
-using Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,7 +54,7 @@ namespace Business_Layer.Services
             }
         }
 
-        public async Task<bool> SendOrderInfoToWarehouseAsync(int orderId)
+        public async Task<bool> ReserveProductsInWarehouseAsync(int orderId)
         {
             List<OrderItemDTO> items = await OrderItem.GetByOrderId(orderId);
 
