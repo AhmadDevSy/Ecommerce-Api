@@ -1,6 +1,6 @@
 ﻿namespace Enums;
 
-public enum OrderState
+public enum OrderStatus
 {
     Pending = 1,
     Cancelled = 2,

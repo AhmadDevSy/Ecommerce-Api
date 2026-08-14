@@ -15,7 +15,7 @@ public class CartItem
     private EnRecordMode Mode;
 
     public int Id { get; protected set; }
-    public int Count { get; set; }
+    public int Quantity { get; set; }
     public int CartId { get; init; }
     public int ProductId { get; init; }
     public int? PromoCodeId { get; private set; }
@@ -24,7 +24,7 @@ public class CartItem
     {
         Id = this.Id,
         CartId = this.CartId,
-        Count = this.Count,
+        Count = this.Quantity,
         ProductId = this.ProductId,
         PromoCodeId = this.PromoCodeId
     };
@@ -40,7 +40,7 @@ public class CartItem
     {
         this.Id = dto.Id;
         this.CartId = dto.CartId;
-        this.Count = dto.Count;
+        this.Quantity = dto.Count;
         this.ProductId = dto.ProductId;
         this.PromoCodeId = dto.PromoCodeId;
 
@@ -126,7 +126,7 @@ public class CartItem
             return false;
         }
 
-        if (promocode.Count == 0)
+        if (promocode.Quantity == 0)
         {
             return false;
         }

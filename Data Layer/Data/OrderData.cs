@@ -35,7 +35,7 @@ public class OrderData
                     UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
                     TotalPrice = reader.GetDecimal(reader.GetOrdinal("TotalPrice")),
                     CreatedDate = reader.GetDateTime(reader.GetOrdinal("OrderDate")),
-                    StateId = reader.GetByte(reader.GetOrdinal("StateId"))
+                    StatusId = reader.GetByte(reader.GetOrdinal("StatusId"))
                 };
             }
 
@@ -70,7 +70,7 @@ public class OrderData
                     UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
                     TotalPrice = reader.GetDecimal(reader.GetOrdinal("TotalPrice")),
                     CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
-                    StateId = reader.GetByte(reader.GetOrdinal("StateId"))
+                    StatusId = reader.GetByte(reader.GetOrdinal("StatusId"))
                 };
 
                 result.Result = EnCreateOrderResult.Success;
@@ -111,7 +111,7 @@ public class OrderData
                     UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
                     TotalPrice = reader.GetDecimal(reader.GetOrdinal("TotalPrice")),
                     CreatedDate = reader.GetDateTime(reader.GetOrdinal("OrderDate")),
-                    StateId = reader.GetByte(reader.GetOrdinal("StateId"))
+                    StatusId = reader.GetByte(reader.GetOrdinal("StatusId"))
                 });
             }
 
@@ -159,13 +159,13 @@ public class OrderData
         return items;
     }
 
-    public static async Task<bool> UpdateState(int orderId, byte stateId)
+    public static async Task<bool> UpdateState(int orderId, byte statusId)
     {
         using SqlConnection connection = new SqlConnection(ConnectionStrings.Default);
-        using SqlCommand command = new SqlCommand("UPDATE Orders SET StateId = @StateId WHERE Id = @Id", connection);
+        using SqlCommand command = new SqlCommand("UPDATE Orders SET StatusId = @StatusId WHERE Id = @Id", connection);
 
         command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = orderId });
-        command.Parameters.Add(new SqlParameter("@StateId", SqlDbType.TinyInt) { Value = stateId });
+        command.Parameters.Add(new SqlParameter("@StatusId", SqlDbType.TinyInt) { Value = statusId });
 
         try
         {

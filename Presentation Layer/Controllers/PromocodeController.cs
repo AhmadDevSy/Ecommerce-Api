@@ -22,7 +22,7 @@ public class PromocodeController : ControllerBase
             ExpiryDate = dto.ExpiryDate,
             ProductId = dto.ProductId,
             Type = (DiscountType)dto.TypeId,
-            Count = dto.Count,
+            Quantity = dto.Count,
             UserId = 0,
             IsEnable = false
         };
@@ -49,7 +49,7 @@ public class PromocodeController : ControllerBase
         }
 
         promocode.ExpiryDate = dto.ExpiryDate;
-        promocode.Count = dto.Count;
+        promocode.Quantity = dto.Count;
         promocode.IsEnable = dto.IsEnable;
 
         if (!await promocode.Save())

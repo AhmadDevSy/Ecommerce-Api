@@ -10,7 +10,11 @@ using Business_Layer.DTO;
 using Models.DTO;
 using Business_Layer.Services;
 using Models.Requests;
-
+using Stripe;
+using Stripe.Checkout;
+using StripeEvent = Stripe.Event;
+using Stripe.Climate;
+using ProjectOrder = Business_Layer.Business.Order;
 
 namespace Presentation_Layer.Controllers;
 
@@ -30,42 +34,23 @@ public class OrdersController : ControllerBase
     }
 
 
-    [HttpPost("checkout")]
-    public async Task<IActionResult> Create([FromBody] PaymentRequest request)
+    [HttpPost("{cartId}")]
+    public async Task<IActionResult> Add(int cartId)
     {
-        Cart cart = await Cart.GetByUserId(User.GetUserId());
+        Cart cart = await Cart.GetByUserId(cartId);
 
         if (cart == null)
         {
             return NotFound("Cart Not Found");
         }
 
-        CreateOrderOperation op = await Order.Create(cart.Id);
-
+        CreateOrderOperation op = await ProjectOrder.Create(cart.Id);
 
         switch (op.Result)
         {
             case EnCreateOrderResult.Success:
                 {
-                    if(op.Order == null)
-                    {
-                        return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
-                    }
-
-                    if (await _warehouseService.ReserveProductsInWarehouseAsync(op.Order.Id))
-                    {
-                        var sessionUrl = await _stripeService.CreateCheckoutSessionAsync(
-                            request.SuccessUrl,
-                            request.CancelUrl,
-                            op.Order.TotalPrice
-                        );
-                        return Ok(new { sessionId = sessionUrl });
-                    }
-                    else
-                    {
-                        await op.Order.Cancel();
-                        return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
-                    }
+                    return Ok(op.Order);
                 }
 
             case EnCreateOrderResult.CartNotFound:
@@ -100,7 +85,7 @@ public class OrdersController : ControllerBase
     [HttpGet("{orderId}")]
     public async Task<IActionResult> GetById(int orderId)
     {
-        Order order = await Order.GetById(orderId);
+        ProjectOrder order = await ProjectOrder.GetById(orderId);
 
         if (order == null)
         {
@@ -115,7 +100,7 @@ public class OrdersController : ControllerBase
     [HttpGet("items/{orderId}")]
     public async Task<IActionResult> GetOrderItems(int orderId)
     {
-        Order order = await Order.GetById(orderId);
+        ProjectOrder order = await ProjectOrder.GetById(orderId);
 
         if (order == null)
         {
@@ -130,56 +115,135 @@ public class OrdersController : ControllerBase
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetOrdersByUserId(int userId)
     {
-        return Ok(await Order.GetByUserId(userId) ?? []);
+        return Ok(await ProjectOrder.GetByUserId(userId) ?? []);
     }
 
 
 
-    [HttpPatch("cancel/{orderId}")]
-    public async Task<IActionResult> CancelOrder(int orderId)
+    [HttpPost("{orderId}/pay")]
+    public async Task<IActionResult> CreateCheckout([FromBody] PaymentRequest request, int orderId)
     {
-        Order order = await Order.GetById(orderId);
+        ProjectOrder order = await ProjectOrder.GetById(orderId);
 
         if (order == null)
         {
             return NotFound("Order not found");
         }
 
-        if (order.State != OrderState.Pending)
+        if (order.IsLocked)
         {
-            return BadRequest("Cant change this order state");
+            return BadRequest("This order is no longer eligible for payment processing");
         }
 
-        if (!await order.Cancel())
+        if(!await _warehouseService.Health())
         {
-            return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
+            return Problem("Payment Processing Failed", statusCode: StatusCodes.Status503ServiceUnavailable);
         }
 
-        return NoContent();
+        var sessionResult = await _stripeService.CreateCheckoutSessionAsync(
+            request.SuccessUrl,
+            request.CancelUrl,
+            order.TotalPrice
+        );
+
+        if (!sessionResult.Success)
+        {
+            return Problem("Payment Processing Failed", statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        Payment payment = new Payment(order, sessionResult.SessionId);
+
+        if (!await payment.Save())
+        {
+            return Problem("Payment Processing Failed", statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        return Ok(new { sessionUrl = sessionResult.SessionUrl });
     }
 
 
-
-    [HttpPatch("complete/{orderId}")]
-    public async Task<ActionResult<List<OrderDTO>>> CompleteOrder(int orderId)
+    [AllowAnonymous]
+    [HttpPost("handle-webhook")]
+    public async Task<IActionResult> HandleWebhook()
     {
-        Order order = await Order.GetById(orderId);
+        var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
 
-        if (order == null)
+        if (!Request.Headers.TryGetValue("Stripe-Signature", out var signatureHeader))
         {
-            return NotFound("Order not found");
+            return BadRequest("Missing Stripe-Signature header.");
         }
 
-        if (order.State != OrderState.Pending)
+        var webhookSecretKey = Environment.GetEnvironmentVariable("StripeWebhookKey");
+
+        StripeEvent stripeEvent;
+
+        try
         {
-            return BadRequest("Cant change this order state");
+            stripeEvent = EventUtility.ConstructEvent(json, signatureHeader, webhookSecretKey);
+        }
+        catch (StripeException e)
+        {
+            return BadRequest("Something went wrong");
         }
 
-        if (!await order.Complete())
+        switch (stripeEvent.Type)
         {
-            return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
+            case EventTypes.CheckoutSessionExpired:
+                {
+                    if (stripeEvent.Data.Object is not Session expiredSession)
+                    {
+                        break;
+                    }
+
+                    Payment expiredPayment = await Payment.GetById(expiredSession.Id);
+
+                    if (expiredPayment == null)
+                    {
+                        break;
+                    }
+
+                    await expiredPayment.Cancel();
+
+                    break;
+                }
+
+            case EventTypes.CheckoutSessionCompleted:
+                {
+                    if (stripeEvent.Data.Object is not Session session)
+                    {
+                        break;
+                    }
+
+                    Payment payment = await Payment.GetById(session.Id);
+
+                    if (payment == null || payment.IsLocked)
+                    {
+                        break;
+                    }
+
+                    bool isPaid = string.Equals(session.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase);
+
+                    if (!isPaid)
+                    {
+                        break;
+                    }
+
+                    if (!await _warehouseService.ReserveProductsInWarehouseAsync(payment.OrderId))
+                    {
+                        await _stripeService.RefundPaymentAsync(session.PaymentIntentId);
+                        await payment.Cancel();
+                    }
+
+                    if (!await payment.Complete())
+                    {
+                        return Problem("Internal Server Error", statusCode: StatusCodes.Status500InternalServerError);
+                    }
+
+                    break;
+                }
         }
 
-        return NoContent();
+        return Ok();
+
     }
 }

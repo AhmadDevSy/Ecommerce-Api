@@ -88,5 +88,22 @@ namespace Business_Layer.Services
                 return false;
             }
         }
+
+        public async Task<bool> Health()
+        {
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+                var response = await _httpClient.GetAsync("api/health", cts.Token);
+
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Warehouse service health check failed");
+                return false;
+            }
+        }
     }
 }

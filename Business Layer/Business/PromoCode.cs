@@ -19,16 +19,16 @@ public class PromoCode
     public int UserId { get; init; }
     public DiscountType Type { get; init; }
 
-    private int _count;
-    public int Count
+    private int _quantity;
+    public int Quantity
     {
         get
         {
-            return _count;
+            return _quantity;
         }
         set
         {
-            _count = _count > value ? _count : value;
+            _quantity = _quantity > value ? _quantity : value;
         }
     }
 
@@ -51,7 +51,7 @@ public class PromoCode
         Code = this.Code,
         ProductId = this.ProductId,
         Discount = this.Discount,
-        Count = this.Count,
+        Count = this.Quantity,
         ExpiryDate = this.ExpiryDate,
         IsEnable = this.IsEnable,
         UserId = this.UserId,
@@ -66,7 +66,7 @@ public class PromoCode
         this.UserId = 0;
         this.Type = DiscountType.Percent;
         this.Discount = 0;
-        this.Count = 0;
+        this.Quantity = 0;
         this.ExpiryDate = DateTime.UtcNow;
         this.IsEnable = false;
 
@@ -79,7 +79,7 @@ public class PromoCode
         this.Code = dto.Code;
         this.ProductId = dto.ProductId;
         this.Discount = dto.Discount;
-        this.Count = dto.Count;
+        this.Quantity = dto.Count;
         this.ExpiryDate = dto.ExpiryDate;
         this.IsEnable = dto.IsEnable;
         this.UserId = dto.UserId;

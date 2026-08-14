@@ -66,10 +66,10 @@ public class CartsController : ControllerBase
             {
                 ProductId = productId,
                 CartId = cart.Id,
-                Count = 0
+                Quantity = 0
             };
 
-        item.Count++;
+        item.Quantity++;
 
         if (!await item.Save())
         {
@@ -92,7 +92,7 @@ public class CartsController : ControllerBase
             return NotFound("This Item Not Found In The Cart");
         }
 
-        item.Count++;
+        item.Quantity++;
 
         if (!await item.Save())
         {
@@ -112,12 +112,12 @@ public class CartsController : ControllerBase
             return NotFound("This Item Not Found In The Cart");
         }
 
-        if (item.Count <= 1)
+        if (item.Quantity <= 1)
         {
             return BadRequest("Item Count Cant Be Less Than 1");
         }
 
-        item.Count--;
+        item.Quantity--;
 
         if (!await item.Save())
         {

@@ -12,7 +12,7 @@ namespace Models.DTO
         public int Id { get; set; }
         public decimal TotalPrice { get; set; }
         public int UserId { get; set; }
-        public byte StateId { get; set; }
+        public byte StatusId { get; set; }
         public DateTime CreatedDate { get; set; }
     }
 }

@@ -16,13 +16,13 @@ public class Order
     public int Id { get; init; }
     public decimal TotalPrice { get; init; }
     public int UserId { get; init; }
-    public OrderState State { get; protected set; }
+    public OrderStatus Status { get; protected set; }
     public DateTime CreatedDate { get; init; }
-
+    public bool IsLocked => this.Status != OrderStatus.Pending;
     public OrderDTO DTO => new OrderDTO()
     {
         Id = this.Id,
-        StateId = (byte)this.State,
+        StatusId = (byte)this.Status,
         CreatedDate = this.CreatedDate,
         UserId = this.UserId,
         TotalPrice = this.TotalPrice
@@ -32,7 +32,7 @@ public class Order
     private Order(OrderDTO dto)
     {
         Id = dto.Id;
-        State = (OrderState)dto.StateId;
+        Status = (OrderStatus)dto.StatusId;
         CreatedDate = dto.CreatedDate;
         UserId = dto.UserId;
         TotalPrice = dto.TotalPrice;
@@ -77,21 +77,33 @@ public class Order
 
     public async Task<bool> Cancel()
     {
-        if (this.State != OrderState.Pending)
+        if (this.Status != OrderStatus.Pending)
         {
             return false;
         }
 
-        return await OrderData.UpdateState(this.Id, (byte)OrderState.Cancelled);
+        if (!await OrderData.UpdateState(this.Id, (byte)OrderStatus.Cancelled))
+        {
+            return false;
+        }
+
+        this.Status = OrderStatus.Cancelled;
+        return true;
     }
 
     public async Task<bool> Complete()
     {
-        if (this.State != OrderState.Pending)
+        if (this.Status != OrderStatus.Pending)
         {
             return false;
         }
 
-        return await OrderData.UpdateState(this.Id, (byte)OrderState.Completed);
+        if (!await OrderData.UpdateState(this.Id, (byte)OrderStatus.Completed))
+        {
+            return false;
+        }
+
+        this.Status = OrderStatus.Completed;
+        return true;
     }
 }
