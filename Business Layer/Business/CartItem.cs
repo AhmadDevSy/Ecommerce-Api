@@ -24,7 +24,7 @@ public class CartItem
     {
         Id = this.Id,
         CartId = this.CartId,
-        Count = this.Quantity,
+        Quantity = this.Quantity,
         ProductId = this.ProductId,
         PromoCodeId = this.PromoCodeId
     };
@@ -40,7 +40,7 @@ public class CartItem
     {
         this.Id = dto.Id;
         this.CartId = dto.CartId;
-        this.Quantity = dto.Count;
+        this.Quantity = dto.Quantity;
         this.ProductId = dto.ProductId;
         this.PromoCodeId = dto.PromoCodeId;
 
@@ -146,8 +146,4 @@ public class CartItem
         return await Delete(this.Id);
     }
 
-    public async Task<List<NewOrderRequest>> GetCartItemQuantities(int cartId)
-    {
-        return await CartItemData.GetCartItemQuantities(cartId);
-    }
 }

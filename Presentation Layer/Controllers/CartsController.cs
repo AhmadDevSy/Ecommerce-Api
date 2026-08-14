@@ -1,5 +1,4 @@
 ﻿using Enums;
-using Presentation_Layer.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models;
@@ -15,10 +14,10 @@ namespace Presentation_Layer.Controllers;
 [Route("api/carts")]
 public class CartsController : ControllerBase
 {
-    [HttpGet("items")]
-    public async Task<IActionResult> GetCartItems()
+    [HttpGet("{cartId}/items")]
+    public async Task<IActionResult> GetCartItems(int cartId)
     {
-        Cart cart = await Cart.GetByUserId(User.GetUserId());
+        Cart cart = await Cart.GetByCartId(cartId);
 
         if (cart == null)
         {
@@ -35,10 +34,10 @@ public class CartsController : ControllerBase
         return Ok(items);
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetTotalPrice()
+    [HttpGet("{cartId}/total-price")]
+    public async Task<IActionResult> GetTotalPrice(int cartId)
     {
-        Cart cart = await Cart.GetByUserId(User.GetUserId());
+        Cart cart = await Cart.GetByCartId(cartId);
 
         if (cart == null)
         {
@@ -51,14 +50,21 @@ public class CartsController : ControllerBase
         });
     }
 
-    [HttpPost("items/{productId}")]
-    public async Task<IActionResult> Add(int productId)
+    [HttpPost("{cartId}/items/{productId}")]
+    public async Task<IActionResult> Add(int cartId, int productId)
     {
-        Cart cart = await Cart.GetByUserId(User.GetUserId());
+        Cart cart = await Cart.GetByCartId(cartId);
 
         if (cart == null)
         {
             return NotFound("Cart Not Found");
+        }
+
+        Product product = await Product.GetById(productId);
+
+        if (product == null)
+        {
+            return NotFound("Product not found");
         }
 
         CartItem item = await CartItem.Get(productId, cart.Id) ??
@@ -82,7 +88,7 @@ public class CartsController : ControllerBase
         });
     }
 
-    [HttpPatch("items/plus/{cartItemId}")]
+    [HttpPatch("items/{cartItemId}/plus")]
     public async Task<IActionResult> PlusOneCartItem(int cartItemId)
     {
         CartItem item = await CartItem.Get(cartItemId);
@@ -102,7 +108,7 @@ public class CartsController : ControllerBase
         return NoContent();
     }
 
-    [HttpPatch("items/minus/{cartItemId}")]
+    [HttpPatch("items/{cartItemId}/minus")]
     public async Task<IActionResult> MinusOneCartItem(int cartItemId)
     {
         CartItem item = await CartItem.Get(cartItemId);
@@ -146,14 +152,14 @@ public class CartsController : ControllerBase
         return NoContent();
     }
 
-    [HttpPatch("items/apply-promocode/{cartItemId}")]
-    public async Task<IActionResult> ApplyPromocode(int cartItemId, [FromQuery] string code)
+    [HttpPatch("items/{cartItemId}/apply-promocode/{code}")]
+    public async Task<IActionResult> ApplyPromocode(int cartItemId, string code)
     {
         CartItem item = await CartItem.Get(cartItemId);
 
         if (item == null)
         {
-            return NotFound("This Item Not Found In The Cart");
+            return NotFound("Cart item not found");
         }
 
         PromoCode promocode = await PromoCode.GetByCodeAndProductId(code, item.ProductId);

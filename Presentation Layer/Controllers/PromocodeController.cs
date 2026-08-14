@@ -1,5 +1,4 @@
-﻿using Presentation_Layer.Authorization;
-using Enums;
+﻿using Enums;
 using Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,9 +20,9 @@ public class PromocodeController : ControllerBase
             Discount = dto.Discount,
             ExpiryDate = dto.ExpiryDate,
             ProductId = dto.ProductId,
-            Type = (DiscountType)dto.TypeId,
-            Quantity = dto.Count,
-            UserId = 0,
+            Type = (EnDiscountType)dto.TypeId,
+            Quantity = dto.Quantity,
+            UserId = dto.UserId,
             IsEnable = false
         };
 
@@ -43,13 +42,13 @@ public class PromocodeController : ControllerBase
     {
         PromoCode promocode = await PromoCode.GetById(dto.Id);
 
-        if(promocode == null)
+        if (promocode == null)
         {
             return NotFound("Promocode not found");
         }
 
         promocode.ExpiryDate = dto.ExpiryDate;
-        promocode.Quantity = dto.Count;
+        promocode.Quantity = dto.Quantity;
         promocode.IsEnable = dto.IsEnable;
 
         if (!await promocode.Save())
@@ -60,12 +59,12 @@ public class PromocodeController : ControllerBase
         return NoContent();
     }
 
-    [HttpGet("{userId}")]
+    [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetByUserId(int userId)
     {
         List<PromoCodeDTO> result = await PromoCode.GetByUserId(userId);
 
-        if(result == null)
+        if (result == null)
         {
             return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
         }
@@ -73,12 +72,12 @@ public class PromocodeController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPatch("toggle/{promocodeId}")]
+    [HttpPatch("{promocodeId}/toggle")]
     public async Task<IActionResult> Toggle(int promocodeId)
     {
         PromoCode promocode = await PromoCode.GetById(promocodeId);
 
-        if(promocode == null)
+        if (promocode == null)
         {
             return NotFound();
         }

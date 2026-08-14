@@ -96,13 +96,13 @@ public class CartsData
             return false;
         }
     }
-    public async Task<int> GetCartItemsCount(int userId)
+    public async Task<int> GetCartItemsCount(int cartId)
     {
-        string query = "SELECT SUM(count) FROM CartItems WHERE cartId = @userId";
+        string query = "SELECT SUM(count) FROM CartItems WHERE CartId = @CartId";
         using var conn = new SqlConnection(ConnectionStrings.Default);
         using var sqlCommand = new SqlCommand(query, conn);
 
-        sqlCommand.Parameters.Add(new SqlParameter("@userId", SqlDbType.Int) { Value = userId });
+        sqlCommand.Parameters.Add(new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
 
         try
         {
@@ -119,52 +119,8 @@ public class CartsData
             return -1;
         }
     }
-    public async Task<List<CartItemsCatalog>> GetCartItems(int userId)
-    {
-        List<CartItemsCatalog> cartItems = new();
 
-        using var conn = new SqlConnection(ConnectionStrings.Default);
-        using var sqlCommand = new SqlCommand("GetCartItemsCatalog", conn);
 
-        sqlCommand.CommandType = CommandType.StoredProcedure;
-        sqlCommand.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = userId });
-
-        try
-        {
-            await conn.OpenAsync();
-            using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                cartItems.Add(new CartItemsCatalog
-                {
-                    id = reader.GetInt32(reader.GetOrdinal("id")),
-                    productId = reader.GetInt32(reader.GetOrdinal("productId")),
-                    name = reader.GetString(reader.GetOrdinal("name")),
-                    count = reader.GetInt32(reader.GetOrdinal("count")),
-                    price = reader.GetDecimal(reader.GetOrdinal("price")),
-                    totalPrice = reader.GetDecimal(reader.GetOrdinal("totalPrice")),
-
-                    priceAfterDiscount = reader.IsDBNull(reader.GetOrdinal("priceAfterDiscount")) ?
-                    null : reader.GetDecimal(reader.GetOrdinal("priceAfterDiscount")),
-
-                    promocodeText = reader.IsDBNull(reader.GetOrdinal("code")) ?
-                    null : reader.GetString(reader.GetOrdinal("code")),
-
-                    discountType = reader.IsDBNull(reader.GetOrdinal("discountType")) ?
-                    null : reader.GetString(reader.GetOrdinal("discountType")),
-
-                    image = reader.IsDBNull(reader.GetOrdinal("image")) ?
-                     null : reader.GetString(reader.GetOrdinal("image"))
-                });
-            }
-        }
-        catch (Exception ex)
-        {
-            return null;
-        }
-
-        return cartItems;
-    }
     public static async Task<decimal> GetTotalPrice(int cartId)
     {
         using SqlConnection sqlConnect = new SqlConnection(ConnectionStrings.Default);
@@ -190,14 +146,44 @@ public class CartsData
         return 0;
     }
 
-    public static Task<bool> RemoveExpiredPromocodesAsync(int cartId)
+    public static async Task<bool> RemoveInvalidPromocodes(int cartId)
     {
-        throw new NotImplementedException();
+        using var conn = new SqlConnection(ConnectionStrings.Default);
+        using var sqlCommand = new SqlCommand("@dbo.RemoveInvalidPromocodes", conn);
+
+        sqlCommand.CommandType = CommandType.StoredProcedure;
+        sqlCommand.Parameters.Add(new SqlParameter("@CardId", SqlDbType.Int) { Value = cartId });
+
+        try
+        {
+            await conn.OpenAsync();
+            await sqlCommand.ExecuteNonQueryAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
     }
 
-    public static Task<bool> SyncCartQuantityWithStockAsync(int cartId)
+    public static async Task<bool> SyncCartQuantityWithProductQuantityAsync(int cartId)
     {
-        throw new NotImplementedException();
+        using var conn = new SqlConnection(ConnectionStrings.Default);
+        using var sqlCommand = new SqlCommand("dbo.SyncCartQuantityWithProductsQuantity", conn);
+
+        sqlCommand.CommandType = CommandType.StoredProcedure;
+        sqlCommand.Parameters.Add(new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
+
+        try
+        {
+            await conn.OpenAsync();
+            await sqlCommand.ExecuteNonQueryAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
     }
 
 }

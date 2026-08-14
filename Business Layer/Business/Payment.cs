@@ -20,8 +20,8 @@ public class Payment
     public decimal Amount { get; init; }
     public DateTime CreateDate { get; init; }
     public int UserId { get; init; }
-    public PaymentStatus Status { get; protected set; }
-    public bool IsLocked => this.Status != PaymentStatus.Pending;
+    public EnPaymentStatus Status { get; protected set; }
+    public bool IsLocked => this.Status != EnPaymentStatus.Pending;
 
     public PaymentDTO DTO => new PaymentDTO()
     {
@@ -36,7 +36,7 @@ public class Payment
     public Payment(Order order, string paymentId)
     {
         Id = paymentId;
-        Status = PaymentStatus.Pending;
+        Status = EnPaymentStatus.Pending;
         CreateDate = DateTime.UtcNow;
 
         OrderId = order.Id;
@@ -49,7 +49,7 @@ public class Payment
     private Payment(PaymentDTO dto)
     {
         Id = dto.Id;
-        Status = (PaymentStatus)dto.StatusId;
+        Status = (EnPaymentStatus)dto.StatusId;
         OrderId = dto.OrderId;
         Amount = dto.Amount;
         CreateDate = dto.CreateDate;
@@ -70,18 +70,8 @@ public class Payment
         return new Payment(dto);
     }
 
-    //public static async Task<List<PaymentDTO>> GetByOrderId(int orderId)
-    //{
-    //    return await PaymentData.GetByOrderId(orderId);
-    //}
-
     public async ValueTask<bool> Save()
     {
-        if (IsLocked)
-        {
-            return false;
-        }
-
         switch (Mode)
         {
             case EnRecordMode.Add:
@@ -108,37 +98,33 @@ public class Payment
 
     public async ValueTask<bool> Complete()
     {
-        if (IsLocked)
+        if (this.IsLocked)
         {
             return false;
         }
 
-
-        if (!await PaymentData.UpdateState(this.Id, (byte)PaymentStatus.Completed))
+        if (!await PaymentData.UpdateState(this.Id, (byte)EnPaymentStatus.Completed))
         {
             return false;
         }
 
-        this.Status = PaymentStatus.Cancelled;
+        this.Status = EnPaymentStatus.Completed;
         return true;
     }
 
     public async ValueTask<bool> Cancel()
     {
-        if (IsLocked)
+        if (this.IsLocked)
         {
             return false;
         }
 
-        Order order = await Order.GetById(this.OrderId);
-
-        if (!await order.Cancel() || !await PaymentData.UpdateState(this.Id, (byte)PaymentStatus.Cancelled))
+        if (!await PaymentData.UpdateState(this.Id, (byte)EnPaymentStatus.Cancelled))
         {
             return false;
-
         }
 
-        this.Status = PaymentStatus.Cancelled;
+        this.Status = EnPaymentStatus.Cancelled;
         return true;
     }
 

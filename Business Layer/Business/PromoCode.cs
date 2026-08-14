@@ -17,7 +17,7 @@ public class PromoCode
     public decimal Discount { get; init; }
     public bool IsEnable { get; set; }
     public int UserId { get; init; }
-    public DiscountType Type { get; init; }
+    public EnDiscountType Type { get; init; }
 
     private int _quantity;
     public int Quantity
@@ -51,7 +51,7 @@ public class PromoCode
         Code = this.Code,
         ProductId = this.ProductId,
         Discount = this.Discount,
-        Count = this.Quantity,
+        Quantity = this.Quantity,
         ExpiryDate = this.ExpiryDate,
         IsEnable = this.IsEnable,
         UserId = this.UserId,
@@ -64,7 +64,7 @@ public class PromoCode
         this.Code = null!;
         this.ProductId = 0;
         this.UserId = 0;
-        this.Type = DiscountType.Percent;
+        this.Type = EnDiscountType.Percent;
         this.Discount = 0;
         this.Quantity = 0;
         this.ExpiryDate = DateTime.UtcNow;
@@ -79,11 +79,11 @@ public class PromoCode
         this.Code = dto.Code;
         this.ProductId = dto.ProductId;
         this.Discount = dto.Discount;
-        this.Quantity = dto.Count;
+        this.Quantity = dto.Quantity;
         this.ExpiryDate = dto.ExpiryDate;
         this.IsEnable = dto.IsEnable;
         this.UserId = dto.UserId;
-        this.Type = (DiscountType)dto.TypeId;
+        this.Type = (EnDiscountType)dto.TypeId;
 
         Mode = EnRecordMode.Update;
     }

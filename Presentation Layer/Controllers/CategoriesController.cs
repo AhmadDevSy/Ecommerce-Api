@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Models;
 using Microsoft.AspNetCore.Authorization;
-using Presentation_Layer.Authorization;
 using Enums;
 using Business_Layer.Business;
 using Models.DTO;
@@ -12,7 +11,7 @@ namespace Presentation_Layer.Controllers;
 [Route("api/categories")]
 public class CategoriesController : ControllerBase
 {
-    [HttpGet]
+    [HttpGet("all")]
     public async Task<IActionResult> Get()
     {
         List<CategoryDTO> categories = await Category.GetAll();

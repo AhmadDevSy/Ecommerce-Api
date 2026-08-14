@@ -19,7 +19,7 @@ public class PromoCodeData
         using SqlConnection sqlConnection = new SqlConnection(ConnectionStrings.Default);
         using SqlCommand sqlCommand = new SqlCommand(query, sqlConnection);
 
-        sqlCommand.Parameters.Add(new SqlParameter("@Code", SqlDbType.Int) { Value = code });
+        sqlCommand.Parameters.Add(new SqlParameter("@Code", SqlDbType.VarChar) { Value = code });
         sqlCommand.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
 
         try
@@ -36,7 +36,7 @@ public class PromoCodeData
                     ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
                     TypeId = reader.GetByte(reader.GetOrdinal("TypeId")),
                     ExpiryDate = reader.GetDateTime(reader.GetOrdinal("ExpiryDate")),
-                    Count = reader.GetInt32(reader.GetOrdinal("Count")),
+                    Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                     IsEnable = reader.GetBoolean(reader.GetOrdinal("IsEnable")),
                     UserId = reader.GetInt32(reader.GetOrdinal("UserId"))
 
@@ -74,7 +74,7 @@ public class PromoCodeData
                     ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
                     TypeId = reader.GetByte(reader.GetOrdinal("TypeId")),
                     ExpiryDate = reader.GetDateTime(reader.GetOrdinal("ExpiryDate")),
-                    Count = reader.GetInt32(reader.GetOrdinal("Count")),
+                    Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                     IsEnable = reader.GetBoolean(reader.GetOrdinal("IsEnable")),
                     UserId = reader.GetInt32(reader.GetOrdinal("UserId"))
 
@@ -113,7 +113,7 @@ public class PromoCodeData
                     ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
                     TypeId = reader.GetByte(reader.GetOrdinal("TypeId")),
                     ExpiryDate = reader.GetDateTime(reader.GetOrdinal("ExpiryDate")),
-                    Count = reader.GetInt32(reader.GetOrdinal("Count")),
+                    Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                     IsEnable = reader.GetBoolean(reader.GetOrdinal("IsEnable")),
                     UserId = reader.GetInt32(reader.GetOrdinal("UserId"))
 
@@ -131,8 +131,8 @@ public class PromoCodeData
     {
 
         string query = @"INSERT INTO PromoCodes
-                             (Code,UserId,ProductId,Discount,Count,ExpiryDate,TypeId,IsEnable)
-                      Values (@Code,@UserId,@ProductId,@Discount,@Count,@ExpiryDate,@TypeId,@IsEnable);
+                             (Code,UserId,ProductId,Discount,Quantity,ExpiryDate,TypeId,IsEnable)
+                      Values (@Code,@UserId,@ProductId,@Discount,@Quantity,@ExpiryDate,@TypeId,@IsEnable);
                              SELECT CAST(scope_identity() AS int)";
 
 
@@ -143,7 +143,7 @@ public class PromoCodeData
         sqlcommand.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = dto.UserId });
         sqlcommand.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = dto.ProductId });
         sqlcommand.Parameters.Add(new SqlParameter("@Discount", SqlDbType.Decimal) { Value = dto.Discount });
-        sqlcommand.Parameters.Add(new SqlParameter("@Count", SqlDbType.Int) { Value = dto.Count });
+        sqlcommand.Parameters.Add(new SqlParameter("@Quantity", SqlDbType.Int) { Value = dto.Quantity });
         sqlcommand.Parameters.Add(new SqlParameter("@ExpiryDate", SqlDbType.DateTime) { Value = dto.ExpiryDate });
         sqlcommand.Parameters.Add(new SqlParameter("@TypeId", SqlDbType.Int) { Value = dto.TypeId });
         sqlcommand.Parameters.Add(new SqlParameter("@IsEnable", SqlDbType.Bit) { Value = dto.IsEnable });
@@ -172,11 +172,11 @@ public class PromoCodeData
     }
     public static async Task<bool> Update(PromoCodeDTO dto)
     {
-        string query = @"UPDATE Products SET 
+        string query = @"UPDATE PromoCodes SET 
                              Code=@Code, 
                              ProductId=@ProductId, 
                              Discount=@Discount, 
-                             Count=@Count, 
+                             Quantity=@Quantity, 
                              ExpiryDate=@ExpiryDate, 
                              TypeId=@TypeId, 
                              IsEnable=@IsEnable
@@ -189,9 +189,9 @@ public class PromoCodeData
         sqlcommand.Parameters.Add(new SqlParameter("@Code", SqlDbType.VarChar) { Value = dto.Code });
         sqlcommand.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = dto.ProductId });
         sqlcommand.Parameters.Add(new SqlParameter("@Discount", SqlDbType.Decimal) { Value = dto.Discount });
-        sqlcommand.Parameters.Add(new SqlParameter("@Count", SqlDbType.Int) { Value = dto.Count });
+        sqlcommand.Parameters.Add(new SqlParameter("@Quantity", SqlDbType.Int) { Value = dto.Quantity });
         sqlcommand.Parameters.Add(new SqlParameter("@ExpiryDate", SqlDbType.DateTime) { Value = dto.ExpiryDate });
-        sqlcommand.Parameters.Add(new SqlParameter("@TypeId", SqlDbType.Int) { Value = dto.TypeId });
+        sqlcommand.Parameters.Add(new SqlParameter("@TypeId", SqlDbType.TinyInt) { Value = dto.TypeId });
         sqlcommand.Parameters.Add(new SqlParameter("@IsEnable", SqlDbType.Bit) { Value = dto.IsEnable });
 
         try

@@ -1,13 +1,14 @@
 ﻿
 using System.Text;
 using System.Text.Json;
-using Models;
 using Data_Layer.Data;
 using System.Net.Http.Headers;
 using Enums;
 using Models.DTO;
 using Models.Enums;
 using Business_Layer.DTO;
+using Models.Results;
+using Business_Layer.Services;
 
 namespace Business_Layer.Business;
 
@@ -16,9 +17,8 @@ public class Order
     public int Id { get; init; }
     public decimal TotalPrice { get; init; }
     public int UserId { get; init; }
-    public OrderStatus Status { get; protected set; }
+    public EnOrderStatus Status { get; protected set; }
     public DateTime CreatedDate { get; init; }
-    public bool IsLocked => this.Status != OrderStatus.Pending;
     public OrderDTO DTO => new OrderDTO()
     {
         Id = this.Id,
@@ -32,7 +32,7 @@ public class Order
     private Order(OrderDTO dto)
     {
         Id = dto.Id;
-        Status = (OrderStatus)dto.StatusId;
+        Status = (EnOrderStatus)dto.StatusId;
         CreatedDate = dto.CreatedDate;
         UserId = dto.UserId;
         TotalPrice = dto.TotalPrice;
@@ -41,7 +41,7 @@ public class Order
 
     public static async Task<CreateOrderOperation> Create(int cartId)
     {
-        CreateOrderDatabaseOperation op = await OrderData.Create(cartId);
+        CreateOrderDatabaseResult op = await OrderData.Create(cartId);
         Order order = null;
 
         if (op.OrderDto != null)
@@ -77,33 +77,23 @@ public class Order
 
     public async Task<bool> Cancel()
     {
-        if (this.Status != OrderStatus.Pending)
+        if (!await OrderData.UpdateState(this.Id, (byte)EnOrderStatus.Cancelled))
         {
             return false;
         }
 
-        if (!await OrderData.UpdateState(this.Id, (byte)OrderStatus.Cancelled))
-        {
-            return false;
-        }
-
-        this.Status = OrderStatus.Cancelled;
+        this.Status = EnOrderStatus.Cancelled;
         return true;
     }
 
     public async Task<bool> Complete()
     {
-        if (this.Status != OrderStatus.Pending)
+        if (!await OrderData.UpdateState(this.Id, (byte)EnOrderStatus.Completed))
         {
             return false;
         }
 
-        if (!await OrderData.UpdateState(this.Id, (byte)OrderStatus.Completed))
-        {
-            return false;
-        }
-
-        this.Status = OrderStatus.Completed;
+        this.Status = EnOrderStatus.Completed;
         return true;
     }
 }

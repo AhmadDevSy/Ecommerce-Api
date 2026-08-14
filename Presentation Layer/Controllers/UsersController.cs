@@ -1,5 +1,4 @@
-﻿using Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Business_Layer.Business;
 using Models.Requests;

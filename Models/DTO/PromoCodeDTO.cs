@@ -12,7 +12,7 @@ namespace Models.DTO
         public string Code { get; set; }
         public int ProductId { get; set; }
         public decimal Discount { get; set; }
-        public int Count { get; set; }
+        public int Quantity { get; set; }
         public DateTime ExpiryDate { get; set; }
         public byte TypeId { get; set; }
         public bool IsEnable { get; set; }

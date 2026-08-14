@@ -33,6 +33,7 @@ public class Category
     {
         Id = dto.Id;
         Name = dto.Name;
+        Mode = EnRecordMode.Update;
     }
 
     public static async Task<List<CategoryDTO>> GetAll()

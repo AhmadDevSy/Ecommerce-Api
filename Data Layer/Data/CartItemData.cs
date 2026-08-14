@@ -13,7 +13,7 @@ public class CartItemData
 
     public static async Task<CartItemDTO> Get(int itemId)
     {
-        string query = "SELECT Id,ProductId,Count,PromoCodeId,CartId FROM CartItems WHERE Id = @Id";
+        string query = "SELECT Id,ProductId,Quantity,PromoCodeId,CartId FROM CartItems WHERE Id = @Id";
 
         using var conn = new SqlConnection(ConnectionStrings.Default);
         using var sqlCommand = new SqlCommand(query, conn);
@@ -30,7 +30,7 @@ public class CartItemData
                 {
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
                     ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
-                    Count = reader.GetInt32(reader.GetOrdinal("Count")),
+                    Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                     CartId = reader.GetInt32(reader.GetOrdinal("CartId")),
 
                     PromoCodeId = reader.IsDBNull(reader.GetOrdinal("PromoCodeId"))
@@ -48,13 +48,13 @@ public class CartItemData
     }
     public static async Task<CartItemDTO> Get(int productId, int cartId)
     {
-        string query = "SELECT Id,ProductId,Count,PromoCodeId,CartId FROM CartItems WHERE CartId = @CartId AND ProductId = @ProductId";
+        string query = "SELECT Id,ProductId,Quantity,PromoCodeId,CartId FROM CartItems WHERE CartId = @CartId AND ProductId = @ProductId";
 
         using var conn = new SqlConnection(ConnectionStrings.Default);
         using var sqlCommand = new SqlCommand(query, conn);
 
-        sqlCommand.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = productId });
-        sqlCommand.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = cartId });
+        sqlCommand.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
+        sqlCommand.Parameters.Add(new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
 
         try
         {
@@ -66,7 +66,7 @@ public class CartItemData
                 {
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
                     ProductId = productId,
-                    Count = reader.GetInt32(reader.GetOrdinal("Count")),
+                    Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                     CartId = cartId,
 
                     PromoCodeId = reader.IsDBNull(reader.GetOrdinal("PromoCodeId"))
@@ -86,7 +86,7 @@ public class CartItemData
     {
         List<CartItemDTO> result = new List<CartItemDTO>();
 
-        string query = "SELECT Id,ProductId,Count,PromoCodeId FROM CartItems WHERE CartId = @CartId";
+        string query = "SELECT Id,ProductId,Quantity,PromoCodeId,CartId FROM CartItems WHERE CartId = @CartId";
 
         using var conn = new SqlConnection(ConnectionStrings.Default);
         using var sqlCommand = new SqlCommand(query, conn);
@@ -103,7 +103,7 @@ public class CartItemData
                 {
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
                     ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
-                    Count = reader.GetInt32(reader.GetOrdinal("Count")),
+                    Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                     CartId = reader.GetInt32(reader.GetOrdinal("CartId")),
                     PromoCodeId = reader.IsDBNull(reader.GetOrdinal("PromoCodeId"))
                     ? (int?)null : reader.GetInt32(reader.GetOrdinal("PromoCodeId"))
@@ -126,11 +126,12 @@ public class CartItemData
 
         sqlcommand.Parameters.Add(new SqlParameter("@CartId", SqlDbType.Int) { Value = dto.CartId });
         sqlcommand.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = dto.ProductId });
+        sqlcommand.Parameters.Add(new SqlParameter("@Quantity", SqlDbType.Int) { Value = dto.Quantity });
 
         try
         {
             await sqlConnect.OpenAsync();
-            object obj = sqlcommand.ExecuteScalarAsync();
+            var obj = await sqlcommand.ExecuteScalarAsync();
 
             if (obj == null || obj == DBNull.Value)
             {
@@ -155,7 +156,8 @@ public class CartItemData
         sqlcommand.CommandType = CommandType.StoredProcedure;
 
         sqlcommand.Parameters.Add(new SqlParameter("@CartItemId", SqlDbType.Int) { Value = dto.Id });
-        sqlcommand.Parameters.Add(new SqlParameter("@Count", SqlDbType.Int) { Value = dto.Count });
+        sqlcommand.Parameters.Add(new SqlParameter("@Quantity", SqlDbType.Int) { Value = dto.Quantity });
+        sqlcommand.Parameters.Add(new SqlParameter("@PromoCodeId", SqlDbType.Int) { Value = dto.PromoCodeId });
 
         try
         {
@@ -189,13 +191,13 @@ public class CartItemData
 
 
     }
-    public async Task<bool> SyncCartItemsPromocode(int userId)
+    public async Task<bool> SyncCartItemsPromocode(int cartId)
     {
         using SqlConnection connection = new SqlConnection(ConnectionStrings.Default);
         using SqlCommand command = new SqlCommand("dbo.AsyncCartItemsWithProducts", connection);
         command.CommandType = CommandType.StoredProcedure;
 
-        command.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = userId });
+        command.Parameters.Add(new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
 
         try
         {
@@ -210,40 +212,8 @@ public class CartItemData
 
     }
 
-    public static async Task<List<NewOrderRequest>> GetCartItemQuantities(int userId)
-    {
-        List<NewOrderRequest> result = new();
 
-        string query = "SELECT productId,count FROM CartItems WHERE cartId = @UserId";
-
-        using var conn = new SqlConnection(ConnectionStrings.Default);
-        using var sqlCommand = new SqlCommand(query, conn);
-
-        sqlCommand.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = userId });
-
-        try
-        {
-            await conn.OpenAsync();
-            using SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                result.Add(new NewOrderRequest
-                {
-                    StockId = reader.GetInt32(reader.GetOrdinal("productId")),
-                    Quantity = reader.GetInt32(reader.GetOrdinal("count")),
-                });
-            }
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            return null;
-        }
-
-    }
-
-    public static async Task<bool> SyncCartItemsCount(DataTable items, int userId)
+    public static async Task<bool> SyncCartItemsCount(DataTable items, int cartId)
     {
         using var conn = new SqlConnection(ConnectionStrings.Default);
         using var sqlCommand = new SqlCommand("SyncCartItemsCount", conn);
@@ -256,7 +226,7 @@ public class CartItemData
         };
 
         sqlCommand.CommandType = CommandType.StoredProcedure;
-        sqlCommand.Parameters.Add(new SqlParameter("@UserId", SqlDbType.Int) { Value = userId });
+        sqlCommand.Parameters.Add(new SqlParameter("@CartId", SqlDbType.Int) { Value = cartId });
         sqlCommand.Parameters.Add(tvpParam);
 
         try

@@ -3,10 +3,10 @@ using Microsoft.Data.SqlClient;
 using System.ComponentModel;
 using System.Data;
 using Microsoft.Extensions.Logging;
-using Models;
 using Models.DTO;
 using Models.Enums;
 using Data_Layer.Options;
+using Models.Results;
 
 namespace Data_Layer.Data;
 
@@ -34,7 +34,7 @@ public class OrderData
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
                     UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
                     TotalPrice = reader.GetDecimal(reader.GetOrdinal("TotalPrice")),
-                    CreatedDate = reader.GetDateTime(reader.GetOrdinal("OrderDate")),
+                    CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
                     StatusId = reader.GetByte(reader.GetOrdinal("StatusId"))
                 };
             }
@@ -47,9 +47,9 @@ public class OrderData
         }
         return null;
     }
-    public static async Task<CreateOrderDatabaseOperation> Create(int cartId)
+    public static async Task<CreateOrderDatabaseResult> Create(int cartId)
     {
-        CreateOrderDatabaseOperation result = new CreateOrderDatabaseOperation();
+        CreateOrderDatabaseResult result = new CreateOrderDatabaseResult();
 
         using SqlConnection connection = new SqlConnection(ConnectionStrings.Default);
         using SqlCommand command = new SqlCommand("dbo.CreateOrder", connection);
@@ -110,7 +110,7 @@ public class OrderData
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
                     UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
                     TotalPrice = reader.GetDecimal(reader.GetOrdinal("TotalPrice")),
-                    CreatedDate = reader.GetDateTime(reader.GetOrdinal("OrderDate")),
+                    CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
                     StatusId = reader.GetByte(reader.GetOrdinal("StatusId"))
                 });
             }
@@ -142,7 +142,7 @@ public class OrderData
                 items.Add(new OrderItemDTO
                 {
                     Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                    Count = reader.GetInt32(reader.GetOrdinal("Count")),
+                    Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                     Price = reader.GetDecimal(reader.GetOrdinal("Price")),
                     OrderId = reader.GetInt32(reader.GetOrdinal("OrderId")),
                     ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),

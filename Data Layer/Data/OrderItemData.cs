@@ -19,7 +19,6 @@ namespace Data_Layer.Data
             using SqlConnection connection = new SqlConnection(ConnectionStrings.Default);
             using SqlCommand command = new SqlCommand("SELECT * FROM OrderItems OI WHERE OrderId = @OrderId", connection);
 
-            command.CommandType = CommandType.StoredProcedure;
             command.Parameters.Add(new SqlParameter("@OrderId", SqlDbType.Int) { Value = orderId });
 
             try
@@ -31,7 +30,7 @@ namespace Data_Layer.Data
                     items.Add(new OrderItemDTO
                     {
                         Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                        Count = reader.GetInt32(reader.GetOrdinal("Count")),
+                        Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                         Price = reader.GetDecimal(reader.GetOrdinal("Price")),
                         OrderId = reader.GetInt32(reader.GetOrdinal("OrderId")),
                         ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),

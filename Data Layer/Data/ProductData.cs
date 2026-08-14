@@ -11,7 +11,7 @@ namespace Data_Layer.Data;
 
 public static class ProductData
 {
-    public static async Task<List<ProductDTO>> GetProductsCatalog(int categoryId, int lastSeenId)
+    public static async Task<List<ProductDTO>> GetProductsCatalog(int categoryId, int lastSeenId, int take)
     {
         List<ProductDTO> products = new();
 
@@ -21,6 +21,7 @@ public static class ProductData
         command.CommandType = CommandType.StoredProcedure;
         command.Parameters.Add(new SqlParameter("@CategoryId", SqlDbType.Int) { Value = categoryId });
         command.Parameters.Add(new SqlParameter("@LastIdSeen", SqlDbType.Int) { Value = lastSeenId });
+        command.Parameters.Add(new SqlParameter("@Take", SqlDbType.Int) { Value = take });
 
         try
         {
@@ -32,9 +33,9 @@ public static class ProductData
                 {
                     Id = reader.GetInt32(reader.GetOrdinal("id")),
                     Name = reader.GetString(reader.GetOrdinal("name")),
-                    Count = reader.GetInt32(reader.GetOrdinal("count")),
+                    Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                     Price = reader.GetDecimal(reader.GetOrdinal("price")),
-                    CreateDate = reader.GetDateTime(reader.GetOrdinal("date")),
+                    CreateDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
                     UserId = reader.GetInt32(reader.GetOrdinal("userId")),
                     CategoryId = reader.GetInt32(reader.GetOrdinal("categoryId")),
 
@@ -51,7 +52,7 @@ public static class ProductData
 
         return products;
     }
-    public static async Task<List<ProductDTO>> GetProductsCatalog(int lastSeenId)
+    public static async Task<List<ProductDTO>> GetProductsCatalog(int lastSeenId, int take)
     {
         List<ProductDTO> products = new();
 
@@ -60,6 +61,7 @@ public static class ProductData
 
         command.CommandType = CommandType.StoredProcedure;
         command.Parameters.Add(new SqlParameter("@LastIdSeen", SqlDbType.Int) { Value = lastSeenId });
+        command.Parameters.Add(new SqlParameter("@Take", SqlDbType.Int) { Value = take });
 
         try
         {
@@ -71,9 +73,9 @@ public static class ProductData
                 {
                     Id = reader.GetInt32(reader.GetOrdinal("id")),
                     Name = reader.GetString(reader.GetOrdinal("name")),
-                    Count = reader.GetInt32(reader.GetOrdinal("count")),
+                    Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                     Price = reader.GetDecimal(reader.GetOrdinal("price")),
-                    CreateDate = reader.GetDateTime(reader.GetOrdinal("date")),
+                    CreateDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
                     UserId = reader.GetInt32(reader.GetOrdinal("userId")),
                     CategoryId = reader.GetInt32(reader.GetOrdinal("categoryId")),
 
@@ -110,9 +112,9 @@ public static class ProductData
                 {
                     Id = reader.GetInt32(reader.GetOrdinal("id")),
                     Name = reader.GetString(reader.GetOrdinal("name")),
-                    Count = reader.GetInt32(reader.GetOrdinal("count")),
+                    Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
                     Price = reader.GetDecimal(reader.GetOrdinal("price")),
-                    CreateDate = reader.GetDateTime(reader.GetOrdinal("date")),
+                    CreateDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
                     UserId = reader.GetInt32(reader.GetOrdinal("userId")),
                     CategoryId = reader.GetInt32(reader.GetOrdinal("categoryId")),
 
@@ -132,29 +134,28 @@ public static class ProductData
     public static async Task<ProductDTO> GetProductById(int productId)
     {
         using SqlConnection connection = new SqlConnection(ConnectionStrings.Default);
-        using SqlCommand command = new SqlCommand("GetProductDetailsExtended", connection);
+        using SqlCommand command = new SqlCommand("SELECT * FROM Products WHERE Id = @Id", connection);
 
-        command.CommandType = CommandType.StoredProcedure;
-        command.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
+        command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = productId });
 
         try
         {
             await connection.OpenAsync();
             using SqlDataReader reader = await command.ExecuteReaderAsync();
-            if (!await reader.ReadAsync())
+            if (await reader.ReadAsync())
             {
                 return new ProductDTO
                 {
-                    Id = reader.GetInt32(reader.GetOrdinal("id")),
-                    Name = reader.GetString(reader.GetOrdinal("name")),
-                    Count = reader.GetInt32(reader.GetOrdinal("count")),
-                    Price = reader.GetDecimal(reader.GetOrdinal("price")),
-                    CreateDate = reader.GetDateTime(reader.GetOrdinal("date")),
-                    UserId = reader.GetInt32(reader.GetOrdinal("userId")),
-                    CategoryId = reader.GetInt32(reader.GetOrdinal("categoryId")),
+                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                    Name = reader.GetString(reader.GetOrdinal("Name")),
+                    Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
+                    Price = reader.GetDecimal(reader.GetOrdinal("Price")),
+                    CreateDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate")),
+                    UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
+                    CategoryId = reader.GetInt32(reader.GetOrdinal("CategoryId")),
 
-                    Description = reader.IsDBNull(reader.GetOrdinal("description")) ?
-                 null : reader.GetString(reader.GetOrdinal("description")),
+                    Description = reader.IsDBNull(reader.GetOrdinal("Description")) ?
+                    null : reader.GetString(reader.GetOrdinal("description")),
                 };
             }
 
@@ -168,8 +169,8 @@ public static class ProductData
     public static async Task<int?> Add(ProductDTO product)
     {
         string query = @"INSERT INTO Products
-                             (name,description,price,categoryId,date,userId)
-                             Values (@name,@description,@price,@categoryId,GETDATE(),@userId);
+                             (name,description,price,categoryId,CreatedDate,userId,Quantity)
+                             Values (@name,@description,@price,@categoryId,@CreatedDate,@userId,0);
                              SELECT CAST(scope_identity() AS int)";
 
 
@@ -180,6 +181,7 @@ public static class ProductData
         sqlcommand.Parameters.Add(new SqlParameter("@userId", SqlDbType.VarChar) { Value = product.UserId });
         sqlcommand.Parameters.Add(new SqlParameter("@price", SqlDbType.Decimal) { Value = product.Price });
         sqlcommand.Parameters.Add(new SqlParameter("@categoryId", SqlDbType.Int) { Value = product.CategoryId });
+        sqlcommand.Parameters.Add(new SqlParameter("@CreatedDate", SqlDbType.DateTime) { Value = product.CreateDate });
         sqlcommand.Parameters.Add(new SqlParameter("@description", SqlDbType.VarChar)
         { Value = product.Description ?? (object)DBNull.Value });
 
@@ -208,8 +210,8 @@ public static class ProductData
     public static async Task<bool> Update(ProductDTO product)
     {
         string query = @"UPDATE Products SET 
-                            name=@name, price=@price, description=@description 
-                            WHERE id=@id AND userId=@userId";
+                            name=@name, price=@price, description=@description , ImageId = @ImageId
+                            WHERE id=@id";
 
         using SqlConnection sqlConnect = new SqlConnection(ConnectionStrings.Default);
         using SqlCommand sqlcommand = new SqlCommand(query, sqlConnect);
@@ -217,6 +219,7 @@ public static class ProductData
         sqlcommand.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = product.Id });
         sqlcommand.Parameters.Add(new SqlParameter("@name", SqlDbType.VarChar) { Value = product.Name });
         sqlcommand.Parameters.Add(new SqlParameter("@price", SqlDbType.Decimal) { Value = product.Price });
+        sqlcommand.Parameters.Add(new SqlParameter("@ImageId", SqlDbType.Decimal) { Value = product.MainImageId });
         sqlcommand.Parameters.Add(new SqlParameter("@description", SqlDbType.VarChar)
         { Value = product.Description ?? (object)DBNull.Value });
 

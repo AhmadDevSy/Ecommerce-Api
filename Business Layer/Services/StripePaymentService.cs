@@ -1,4 +1,4 @@
-﻿using Models;
+﻿using Models.Results;
 using Stripe;
 using Stripe.Checkout;
 

@@ -1,6 +1,6 @@
 ﻿namespace Enums;
 
-public enum PaymentStatus
+public enum EnPaymentStatus
 {
     Pending = 1,
     Cancelled = 2,

@@ -1,4 +1,4 @@
-﻿namespace Models;
+﻿namespace Models.Requests;
 
 public class InsertProductRequest
 {

@@ -1,5 +1,4 @@
-﻿using Presentation_Layer.Authorization;
-using Enums;
+﻿using Enums;
 using Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -37,7 +36,7 @@ public class OrdersController : ControllerBase
     [HttpPost("{cartId}")]
     public async Task<IActionResult> Add(int cartId)
     {
-        Cart cart = await Cart.GetByUserId(cartId);
+        Cart cart = await Cart.GetByCartId(cartId);
 
         if (cart == null)
         {
@@ -50,7 +49,7 @@ public class OrdersController : ControllerBase
         {
             case EnCreateOrderResult.Success:
                 {
-                    return Ok(op.Order);
+                    return Ok(op.Order.DTO);
                 }
 
             case EnCreateOrderResult.CartNotFound:
@@ -92,12 +91,12 @@ public class OrdersController : ControllerBase
             return NotFound("Order not found");
         }
 
-        return Ok(order);
+        return Ok(order.DTO);
     }
 
 
 
-    [HttpGet("items/{orderId}")]
+    [HttpGet("{orderId}/items")]
     public async Task<IActionResult> GetOrderItems(int orderId)
     {
         ProjectOrder order = await ProjectOrder.GetById(orderId);
@@ -130,15 +129,17 @@ public class OrdersController : ControllerBase
             return NotFound("Order not found");
         }
 
-        if (order.IsLocked)
+        if (order.Status != EnOrderStatus.Pending)
         {
             return BadRequest("This order is no longer eligible for payment processing");
         }
 
-        if(!await _warehouseService.Health())
-        {
-            return Problem("Payment Processing Failed", statusCode: StatusCodes.Status503ServiceUnavailable);
-        }
+        //Test
+        if (false)
+            if (!await _warehouseService.Health())
+            {
+                return Problem("Payment Processing Failed", statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
 
         var sessionResult = await _stripeService.CreateCheckoutSessionAsync(
             request.SuccessUrl,
@@ -170,7 +171,7 @@ public class OrdersController : ControllerBase
 
         if (!Request.Headers.TryGetValue("Stripe-Signature", out var signatureHeader))
         {
-            return BadRequest("Missing Stripe-Signature header.");
+            return BadRequest("Something went wrong");
         }
 
         var webhookSecretKey = Environment.GetEnvironmentVariable("StripeWebhookKey");
@@ -225,14 +226,18 @@ public class OrdersController : ControllerBase
 
                     if (!isPaid)
                     {
+                        await payment.Cancel();
                         break;
                     }
 
-                    if (!await _warehouseService.ReserveProductsInWarehouseAsync(payment.OrderId))
-                    {
-                        await _stripeService.RefundPaymentAsync(session.PaymentIntentId);
-                        await payment.Cancel();
-                    }
+                    //Test
+                    if (false)
+                        if (!await _warehouseService.ReserveProductsInWarehouseAsync(payment.OrderId))
+                        {
+                            await _stripeService.RefundPaymentAsync(session.PaymentIntentId);
+                            await payment.Cancel();
+                            break;
+                        }
 
                     if (!await payment.Complete())
                     {

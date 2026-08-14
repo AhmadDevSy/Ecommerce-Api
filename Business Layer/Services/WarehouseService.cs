@@ -1,8 +1,8 @@
 ﻿using Business_Layer.Business;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Models;
 using Models.DTO;
+using Models.Requests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,7 +26,7 @@ namespace Business_Layer.Services
 
 
 
-        public async Task<bool> SendAddQuantityRequestAsync(int productId, ProductQuantity request)
+        public async Task<bool> SendAddQuantityRequestAsync(int productId, AddProductQuantityRequest request)
         {
             try
             {

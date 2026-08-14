@@ -1,16 +1,17 @@
-﻿using Presentation_Layer.Authorization;
-using Enums;
-using Models;
+﻿using Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Business_Layer.Business;
 using Models.DTO;
 using Data_Layer.Data;
 using Business_Layer.Services;
+using Models.Requests;
+using Presentation_Layer.Extensions;
 
 
 namespace Presentation_Layer.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/products")]
 public class ProductsController : ControllerBase
@@ -27,8 +28,8 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> GetProductsCatalog([FromQuery] int lastSeenId, [FromQuery] int? categoryId)
     {
         var products = categoryId == null ?
-            await Product.GetProductsCatalog(lastSeenId) :
-            await Product.GetProductsCatalog(categoryId.Value, lastSeenId);
+            await Product.GetProductsCatalog(lastSeenId, 12) :
+            await Product.GetProductsCatalog(categoryId.Value, lastSeenId, 12);
 
         if (products == null)
         {
@@ -79,7 +80,7 @@ public class ProductsController : ControllerBase
         return Ok(products);
     }
 
-    [HttpGet("images/{productId}")]
+    [HttpGet("{productId}/images")]
     public async Task<IActionResult> GetImages(int productId)
     {
         Product product = await Product.GetById(productId);
@@ -107,7 +108,8 @@ public class ProductsController : ControllerBase
             Price = info.price,
             CategoryId = info.categoryId,
             Name = info.name,
-            Description = info.description
+            Description = info.description,
+            UserId = User.GetUserId()
         };
 
         if (!await product.Save())
@@ -149,7 +151,7 @@ public class ProductsController : ControllerBase
     }
 
 
-    [HttpPost("upload-image/{productId}")]
+    [HttpPost("{productId}/upload-image")]
     public async Task<IActionResult> UploadImage(IFormFile image, int productId)
     {
         if (image == null || image.Length == 0)
@@ -176,8 +178,8 @@ public class ProductsController : ControllerBase
         }
     }
 
-    [HttpPatch("main-image/{productId}")]
-    public async Task<IActionResult> SetMainImage(int productId, [FromQuery] int imageId)
+    [HttpPatch("{productId}/main-image/{imageId}")]
+    public async Task<IActionResult> SetMainImage(int productId, int imageId)
     {
         Product product = await Product.GetById(productId);
 
@@ -208,8 +210,8 @@ public class ProductsController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("send-add-quantity-request/{productId}")]
-    public async Task<IActionResult> SendAddQuantityRequest(ProductQuantity request, int productId)
+    [HttpPost("{productId}/send-add-quantity-request")]
+    public async Task<IActionResult> SendAddQuantityRequest(AddProductQuantityRequest request, int productId)
     {
         if (!await Product.Exists(productId))
         {

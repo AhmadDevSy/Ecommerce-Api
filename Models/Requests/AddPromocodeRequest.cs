@@ -1,14 +1,14 @@
 ﻿using Enums;
 
-namespace Models;
+namespace Models.Requests;
 
-public class AddPromocode
+public class AddPromocodeRequest
 {
     public string code { get; set; }
     public int productId { get; set; }
     public decimal discount { get; set; }
     public int count { get; set; }
     public DateTime expiryDate { get; set; }
-    public DiscountType discountType { get; set; }
+    public EnDiscountType discountType { get; set; }
     public bool isEnable { get; set; }
 }

@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Models;
+namespace Models.Requests;
 
-public class ProductQuantity
+public class AddProductQuantityRequest
 {
     public int Quantity { get; set; }
     public int ReceiverId { get; set; }

@@ -66,11 +66,11 @@ public class Cart
 
     public async Task<bool> RemoveExpiredPromocodesAsync()
     {
-        return await CartsData.RemoveExpiredPromocodesAsync(this.Id);
+        return await CartsData.RemoveInvalidPromocodes(this.Id);
     }
 
     public async Task<bool> SyncCartQuantityWithStockAsync()
     {
-        return await CartsData.SyncCartQuantityWithStockAsync(this.Id);
+        return await CartsData.SyncCartQuantityWithProductQuantityAsync(this.Id);
     }
 }

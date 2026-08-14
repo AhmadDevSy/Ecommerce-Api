@@ -15,7 +15,7 @@ namespace Data_Layer.Data
         public static async Task<bool> AddAsync(PaymentDTO payment)
         {
             const string query = @"
-            INSERT INTO Payments (Id, StateId, OrderId, Amount, CreateDate, UserId)
+            INSERT INTO Payments (Id, StatusId, OrderId, Amount, CreateDate, UserId)
             VALUES (@Id, @StatusId, @OrderId, @Amount, @CreateDate, @UserId);";
 
             using SqlConnection connection = new(ConnectionStrings.Default);
@@ -46,8 +46,7 @@ namespace Data_Layer.Data
         {
             const string query = @"
             UPDATE Payments 
-            SET StatusId = @StatusId,
-                Amount = @Amount
+            SET StatusId = @StatusId
             WHERE Id = @Id;";
 
             using SqlConnection connection = new(ConnectionStrings.Default);
@@ -55,7 +54,6 @@ namespace Data_Layer.Data
 
             command.Parameters.AddWithValue("@Id", payment.Id);
             command.Parameters.AddWithValue("@StatusId", payment.StatusId);
-            command.Parameters.AddWithValue("@Amount", payment.Amount);
 
             await connection.OpenAsync();
             int rowsAffected = await command.ExecuteNonQueryAsync();

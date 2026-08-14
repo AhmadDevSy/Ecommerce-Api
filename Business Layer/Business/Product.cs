@@ -37,7 +37,7 @@ public class Product
     {
         Id = this.Id,
         Name = this.Name,
-        Count = this.Count,
+        Quantity = this.Count,
         Price = this.Price,
         CreateDate = this.CreateDate,
         Description = this.Description,
@@ -66,7 +66,7 @@ public class Product
     {
         Id = dto.Id;
         Name = dto.Name;
-        Count = dto.Count;
+        Count = dto.Quantity;
         Price = dto.Price;
         CreateDate = dto.CreateDate;
         Description = dto.Description;
@@ -101,14 +101,14 @@ public class Product
         return await ProductData.GetProductsByUserId(userId);
     }
 
-    public static async Task<List<ProductDTO>> GetProductsCatalog(int lastSeenId)
+    public static async Task<List<ProductDTO>> GetProductsCatalog(int lastSeenId, int take)
     {
-        return await ProductData.GetProductsCatalog(lastSeenId);
+        return await ProductData.GetProductsCatalog(lastSeenId, take);
     }
 
-    public static async Task<List<ProductDTO>> GetProductsCatalog(int categoryId, int lastSeenId)
+    public static async Task<List<ProductDTO>> GetProductsCatalog(int categoryId, int lastSeenId, int take)
     {
-        return await ProductData.GetProductsCatalog(categoryId, lastSeenId);
+        return await ProductData.GetProductsCatalog(categoryId, lastSeenId, take);
     }
 
     public async Task<bool> Save()
@@ -142,9 +142,9 @@ public class Product
 
     public async Task<ProductImage> UploadImage(IFormFile image)
     {
-        string fullFolderPath = Path.Combine("Images/ProductImage", this.Id.ToString());
+        string fullFolderPath = $"Images/ProductImage/{this.Id}";
         string imageName = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
-        string fullImagePath = Path.Combine(fullFolderPath, imageName);
+        string fullImagePath = fullFolderPath + "/" + imageName;
 
         if (!Directory.Exists(fullFolderPath))
         {
@@ -171,6 +171,6 @@ public class Product
         }
     }
 
-   
+
 
 }
