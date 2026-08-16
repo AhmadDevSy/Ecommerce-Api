@@ -36,6 +36,7 @@ public class Order : IOwnable
         CreatedDate = dto.CreatedDate;
         UserId = dto.UserId;
         TotalPrice = dto.TotalPrice;
+
     }
 
 

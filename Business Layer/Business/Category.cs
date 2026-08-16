@@ -28,6 +28,8 @@ public class Category
     {
         Id = 0;
         Name = null!;
+
+        Mode = EnRecordMode.Add;
     }
 
     private Category(CategoryDTO dto)

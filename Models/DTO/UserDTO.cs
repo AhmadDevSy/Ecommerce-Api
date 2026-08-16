@@ -13,5 +13,9 @@ namespace Models.DTO
         public string Email { get; set; }
         public string HashedPassword { get; set; }
         public string? ImagePath { get; set; }
+
+        public string HashedRefreshToken { get; set; }
+        public DateTime? RefreshTokenExpireAt { get; set; }
+        public DateTime? RefreshTokenRevokedAt { get; set; }
     }
 }

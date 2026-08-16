@@ -1,17 +1,21 @@
 ﻿using Business_Layer.Business;
 using Microsoft.IdentityModel.Tokens;
 using Models.DTO;
+using Models.Requests;
+using Models.Response;
+using PayoutsSdk.Core;
 using Presentation_Layer.Options;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
+using BCryptHelper = BCrypt.Net.BCrypt;
 
 namespace Presentation_Layer.Authentication
 {
-    public class JwtTokenService
+    public class TokenService
     {
-        public async Task<string> CreateToken(User user)
+        public async Task<string> CreateAccessToken(User user)
         {
             var claims = new List<Claim>
             {
@@ -37,6 +41,15 @@ namespace Presentation_Layer.Authentication
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+
+        public string GenerateRefreshToken()
+        {
+            var bytes = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(bytes);
+            return Convert.ToBase64String(bytes);
         }
     }
 

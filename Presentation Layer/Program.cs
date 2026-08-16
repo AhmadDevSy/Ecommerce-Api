@@ -103,7 +103,7 @@ builder.Services.AddHttpClient("WarehouseService", client =>
 
 builder.Services.AddScoped<StripePaymentService>();
 builder.Services.AddScoped<WarehouseService>();
-builder.Services.AddSingleton<JwtTokenService>();
+builder.Services.AddSingleton<Presentation_Layer.Authentication.TokenService>();
 
 builder.Services.AddSingleton<IAuthorizationHandler, AdminOrOwnerHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, AdminOrOwnerSellerHandler>();
