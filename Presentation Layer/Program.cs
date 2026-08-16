@@ -5,9 +5,28 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using Stripe;
 using Business_Layer.Services;
+using Data_Layer.Options;
+using Business_Layer.Options;
+using Presentation_Layer.Options;
+using Presentation_Layer.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Presentation_Layer.Authorization;
+using Presentation_Layer.Authorization.ProductOwner;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+var stripeSection = builder.Configuration.GetSection("Stripe");
+var jwtSection = builder.Configuration.GetSection("Jwt");
+
+string warehouseApiBaseUrl = builder.Configuration.GetRequiredSection("WarehouseApiBaseUrl").Value!;
+ConnectionStrings.Default = builder.Configuration.GetRequiredSection("ConnectionString").Value!;
+StripeConfiguration.ApiKey = stripeSection.GetRequiredSection("SecretKey").Value!;
+StripeOptions.WebhookKey = stripeSection.GetRequiredSection("WebhookKey").Value!;
+JwtOptions.Issuer = jwtSection.GetRequiredSection("Issuer").Value!;
+JwtOptions.Audience = jwtSection.GetRequiredSection("Audience").Value!;
+JwtOptions.SigningKey = jwtSection.GetRequiredSection("SigningKey").Value!;
+JwtOptions.Expires = jwtSection.GetValue<double>("Expires");
 
 builder.Services.AddOpenApi();
 
@@ -20,9 +39,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
 
-            ValidIssuer = builder.Configuration["Issuer"],
-            ValidAudience = builder.Configuration["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["SigningKey"]))
+            ValidIssuer = JwtOptions.Issuer,
+            ValidAudience = JwtOptions.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtOptions.SigningKey))
         };
     });
 
@@ -67,23 +86,28 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(Policies.AdminOrOwnerPolicy, policy => policy.Requirements.Add(new AdminOrOwnerRequirement()));
+    options.AddPolicy(Policies.ResourceOwnerPolicy, policy => policy.Requirements.Add(new ResourceOwnerRequirement()));
+    options.AddPolicy(Policies.AdminOrOwnerSellerPolicy, policy => policy.Requirements.Add(new AdminOrOwnerSellerRequirement()));
+});
+
 builder.Services.AddControllers();
-
-
 
 builder.Services.AddHttpClient("WarehouseService", client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["WarehouseApiBaseUrl"]);
+    client.BaseAddress = new Uri(warehouseApiBaseUrl);
 }).AddAsKeyed();
 
-StripeConfiguration.ApiKey = builder.Configuration["StripeSecretKey"];
 
 builder.Services.AddScoped<StripePaymentService>();
 builder.Services.AddScoped<WarehouseService>();
+builder.Services.AddSingleton<JwtTokenService>();
 
-
-
+builder.Services.AddSingleton<IAuthorizationHandler, AdminOrOwnerHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, AdminOrOwnerSellerHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, ResourceOwnerHandler>();
 
 
 

@@ -3,8 +3,9 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using Models;
-using Models.DTO;
 using Data_Layer.Options;
+using Models.DTO;
+
 
 namespace Data_Layer.Data;
 
@@ -121,7 +122,7 @@ public class CartsData
     }
 
 
-    public static async Task<decimal> GetTotalPrice(int cartId)
+    public static async Task<decimal> GetTotalPriceAsync(int cartId)
     {
         using SqlConnection sqlConnect = new SqlConnection(ConnectionStrings.Default);
         using SqlCommand sqlcommand = new SqlCommand("dbo.GetCartTotalPrice", sqlConnect);
@@ -146,7 +147,7 @@ public class CartsData
         return 0;
     }
 
-    public static async Task<bool> RemoveInvalidPromocodes(int cartId)
+    public static async Task<bool> RemoveInvalidPromocodesAsync(int cartId)
     {
         using var conn = new SqlConnection(ConnectionStrings.Default);
         using var sqlCommand = new SqlCommand("@dbo.RemoveInvalidPromocodes", conn);

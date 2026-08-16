@@ -1,6 +1,6 @@
-﻿using Data_Layer.Options;
+﻿using Models.DTO;
+using Data_Layer.Options;
 using Microsoft.Data.SqlClient;
-using Models.DTO;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -34,7 +34,8 @@ namespace Data_Layer.Data
                         Price = reader.GetDecimal(reader.GetOrdinal("Price")),
                         OrderId = reader.GetInt32(reader.GetOrdinal("OrderId")),
                         ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
-                        PromoCodeId = reader.GetInt32(reader.GetOrdinal("PromoCodeId")),
+                        PromoCodeId = reader.IsDBNull(reader.GetOrdinal("PromoCodeId"))
+                        ? (int?)null : reader.GetInt32(reader.GetOrdinal("PromoCodeId"))
                     });
                 }
 

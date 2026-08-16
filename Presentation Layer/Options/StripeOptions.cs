@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Data_Layer.Options
+namespace Business_Layer.Options
 {
-    public class ConnectionStrings
+    public class StripeOptions
     {
-        public static string? Default;
+        public static string? WebhookKey;
     }
 }

@@ -4,11 +4,10 @@ namespace Models.Requests;
 
 public class AddPromocodeRequest
 {
-    public string code { get; set; }
-    public int productId { get; set; }
-    public decimal discount { get; set; }
-    public int count { get; set; }
-    public DateTime expiryDate { get; set; }
-    public EnDiscountType discountType { get; set; }
-    public bool isEnable { get; set; }
+    public string Code { get; set; }
+    public int ProductId { get; set; }
+    public decimal Discount { get; set; }
+    public int Quantity { get; set; }
+    public DateTime ExpiryDate { get; set; }
+    public byte DiscountType { get; set; }
 }

@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Presentation_Layer.Authentication;
 
 namespace Presentation_Layer.Controllers;
 
@@ -18,6 +19,13 @@ using BCryptHelper = BCrypt.Net.BCrypt;
 [Route("api/users")]
 public class UsersController : ControllerBase
 {
+    private readonly JwtTokenService _jwtTokenService;
+
+    public UsersController(JwtTokenService jwtTokenService)
+    {
+        this._jwtTokenService = jwtTokenService;
+    }
+
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
@@ -31,7 +39,7 @@ public class UsersController : ControllerBase
 
         return Ok(new
         {
-            token = user.CreateToken()
+            token = await _jwtTokenService.CreateToken(user)
         });
     }
 
@@ -63,9 +71,10 @@ public class UsersController : ControllerBase
             return Unauthorized("Something went wrong");
         }
 
+
         return Ok(new
         {
-            token = user.CreateToken()
+            token = await _jwtTokenService.CreateToken(user)
         });
     }
 

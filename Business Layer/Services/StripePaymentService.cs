@@ -12,7 +12,7 @@ namespace Business_Layer.Services
 
             var options = new SessionCreateOptions
             {
-                ExpiresAt = DateTime.UtcNow.AddMinutes(30),
+                ExpiresAt = DateTime.UtcNow.AddMinutes(31),
                 Mode = "payment",
                 SuccessUrl = successUrl,
                 CancelUrl = cancelUrl,
@@ -22,7 +22,7 @@ namespace Business_Layer.Services
                     {
                         PriceData = new SessionLineItemPriceDataOptions
                         {
-                            UnitAmount = (long)(amount * 100),
+                            UnitAmount = (long)Math.Round(amount * 100),
                             Currency = "usd",
                             ProductData = new SessionLineItemPriceDataProductDataOptions
                             {
@@ -64,8 +64,7 @@ namespace Business_Layer.Services
                 var service = new RefundService();
                 Refund refund = await service.CreateAsync(options);
 
-                // التحقق من حالة الإرجاع
-                if (refund.Status == "succeeded")
+                if (refund.Status == "succeeded" || refund.Status == "pending")
                 {
                     return new RefundResult
                     {
@@ -82,7 +81,6 @@ namespace Business_Layer.Services
             }
             catch (StripeException e)
             {
-                // تسجيل الخطأ (Logger)
                 return new RefundResult
                 {
                     Success = false,

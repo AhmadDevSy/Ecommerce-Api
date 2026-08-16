@@ -2,9 +2,9 @@
 using Microsoft.Data.SqlClient;
 using System.Data;
 using Models;
-using Models.DTO;
 using System.Collections.Generic;
 using Data_Layer.Options;
+using Models.DTO;
 
 
 namespace Data_Layer.Data;
@@ -41,6 +41,9 @@ public static class ProductData
 
                     Description = reader.IsDBNull(reader.GetOrdinal("description")) ?
                      null : reader.GetString(reader.GetOrdinal("description")),
+
+                    MainImageId = reader.IsDBNull(reader.GetOrdinal("ImageId")) ?
+                     null : reader.GetInt32(reader.GetOrdinal("ImageId")),
                 });
             }
         }
@@ -81,6 +84,10 @@ public static class ProductData
 
                     Description = reader.IsDBNull(reader.GetOrdinal("description")) ?
                      null : reader.GetString(reader.GetOrdinal("description")),
+
+
+                    MainImageId = reader.IsDBNull(reader.GetOrdinal("ImageId")) ?
+                     null : reader.GetInt32(reader.GetOrdinal("ImageId")),
                 });
             }
         }
@@ -121,6 +128,9 @@ public static class ProductData
                     Description = reader.IsDBNull(reader.GetOrdinal("description")) ?
                     null : reader.GetString(reader.GetOrdinal("description")),
 
+                    MainImageId = reader.IsDBNull(reader.GetOrdinal("ImageId")) ?
+                     null : reader.GetInt32(reader.GetOrdinal("ImageId")),
+
                 });
             }
         }
@@ -156,6 +166,9 @@ public static class ProductData
 
                     Description = reader.IsDBNull(reader.GetOrdinal("Description")) ?
                     null : reader.GetString(reader.GetOrdinal("description")),
+
+                    MainImageId = reader.IsDBNull(reader.GetOrdinal("ImageId")) ?
+                     null : reader.GetInt32(reader.GetOrdinal("ImageId")),
                 };
             }
 

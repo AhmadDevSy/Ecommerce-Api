@@ -3,8 +3,8 @@ using System.Data;
 using System.Collections.Generic;
 using Models;
 using Microsoft.Extensions.Logging;
-using Models.DTO;
 using Data_Layer.Options;
+using Models.DTO;
 
 namespace Data_Layer.Data;
 
@@ -157,7 +157,10 @@ public class CartItemData
 
         sqlcommand.Parameters.Add(new SqlParameter("@CartItemId", SqlDbType.Int) { Value = dto.Id });
         sqlcommand.Parameters.Add(new SqlParameter("@Quantity", SqlDbType.Int) { Value = dto.Quantity });
-        sqlcommand.Parameters.Add(new SqlParameter("@PromoCodeId", SqlDbType.Int) { Value = dto.PromoCodeId });
+        sqlcommand.Parameters.Add(new SqlParameter("@PromoCodeId", SqlDbType.Int)
+        {
+            Value = (object)dto.PromoCodeId ?? DBNull.Value
+        });
 
         try
         {

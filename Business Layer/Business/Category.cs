@@ -8,6 +8,7 @@ using Data_Layer.Data;
 using Enums;
 using Models.DTO;
 
+
 namespace Business_Layer.Business;
 
 public class Category
@@ -82,6 +83,11 @@ public class Category
         }
 
         return false;
+    }
+
+    public static async Task<bool> Exists(int categoryId)
+    {
+        return await CategoryData.Exists(categoryId);
     }
 
 }

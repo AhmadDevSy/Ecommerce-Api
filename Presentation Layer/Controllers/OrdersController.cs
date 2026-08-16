@@ -6,7 +6,6 @@ using Business_Layer.Business;
 using Presentation_Layer.Extensions;
 using Models.Enums;
 using Business_Layer.DTO;
-using Models.DTO;
 using Business_Layer.Services;
 using Models.Requests;
 using Stripe;
@@ -14,6 +13,8 @@ using Stripe.Checkout;
 using StripeEvent = Stripe.Event;
 using Stripe.Climate;
 using ProjectOrder = Business_Layer.Business.Order;
+using ProjectUser = Business_Layer.Business.User;
+using Presentation_Layer.Authorization;
 
 namespace Presentation_Layer.Controllers;
 
@@ -23,16 +24,19 @@ namespace Presentation_Layer.Controllers;
 public class OrdersController : ControllerBase
 {
     private readonly WarehouseService _warehouseService;
-
     private readonly StripePaymentService _stripeService;
+    private readonly IAuthorizationService _authorizationService;
 
-    public OrdersController(WarehouseService warehouseService, StripePaymentService stripeService)
+    public OrdersController(WarehouseService warehouseService, StripePaymentService stripeService, IAuthorizationService authorizationService)
     {
-        _warehouseService = warehouseService;
-        _stripeService = stripeService;
+        this._warehouseService = warehouseService;
+        this._stripeService = stripeService;
+        this._authorizationService = authorizationService;
     }
 
 
+
+    [Authorize]
     [HttpPost("{cartId}")]
     public async Task<IActionResult> Add(int cartId)
     {
@@ -43,13 +47,18 @@ public class OrdersController : ControllerBase
             return NotFound("Cart Not Found");
         }
 
+        if (!(await _authorizationService.AuthorizeAsync(User, cart, Policies.ResourceOwnerPolicy)).Succeeded)
+        {
+            return Forbid();
+        }
+
         CreateOrderOperation op = await ProjectOrder.Create(cart.Id);
 
         switch (op.Result)
         {
             case EnCreateOrderResult.Success:
                 {
-                    return Ok(op.Order.DTO);
+                    return CreatedAtAction(nameof(GetById), new { productId = op.Order.Id }, op.Order.DTO);
                 }
 
             case EnCreateOrderResult.CartNotFound:
@@ -64,13 +73,13 @@ public class OrdersController : ControllerBase
 
             case EnCreateOrderResult.InvalidPromocode:
                 {
-                    await cart.RemoveExpiredPromocodesAsync();
+                    await cart.RemoveInvalidPromocodesAsync();
                     return BadRequest("One or more promo codes are no longer valid. Your cart has been updated to remove them");
                 }
 
             case EnCreateOrderResult.DemandExceededQuantity:
                 {
-                    await cart.SyncCartQuantityWithStockAsync();
+                    await cart.SyncCartQuantityWithProductQuantityAsync();
                     return BadRequest("The requested quantity exceeds available stock. Your cart has been updated accordingly");
                 }
 
@@ -81,6 +90,7 @@ public class OrdersController : ControllerBase
 
 
 
+    [Authorize]
     [HttpGet("{orderId}")]
     public async Task<IActionResult> GetById(int orderId)
     {
@@ -91,19 +101,30 @@ public class OrdersController : ControllerBase
             return NotFound("Order not found");
         }
 
+        if (!(await _authorizationService.AuthorizeAsync(User, order.UserId, Policies.AdminOrOwnerPolicy)).Succeeded)
+        {
+            return Forbid();
+        }
+
         return Ok(order.DTO);
     }
 
 
 
+    [Authorize]
     [HttpGet("{orderId}/items")]
     public async Task<IActionResult> GetOrderItems(int orderId)
     {
         ProjectOrder order = await ProjectOrder.GetById(orderId);
 
-        if (order == null)
+        if(order == null)
         {
             return NotFound("Order not found");
+        }
+
+        if (!(await _authorizationService.AuthorizeAsync(User, order.UserId, Policies.AdminOrOwnerPolicy)).Succeeded)
+        {
+            return Forbid();
         }
 
         return Ok(await OrderItem.GetByOrderId(orderId) ?? []);
@@ -111,14 +132,28 @@ public class OrdersController : ControllerBase
 
 
 
+    [Authorize]
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetOrdersByUserId(int userId)
     {
+        ProjectUser user = await ProjectUser.Get(userId);
+
+        if(user == null)
+        {
+            return NotFound("User not found");
+        }
+
+        if (!(await _authorizationService.AuthorizeAsync(User, userId, Policies.AdminOrOwnerPolicy)).Succeeded)
+        {
+            return Forbid();
+        }
+
         return Ok(await ProjectOrder.GetByUserId(userId) ?? []);
     }
 
 
 
+    [Authorize]
     [HttpPost("{orderId}/pay")]
     public async Task<IActionResult> CreateCheckout([FromBody] PaymentRequest request, int orderId)
     {
@@ -129,17 +164,20 @@ public class OrdersController : ControllerBase
             return NotFound("Order not found");
         }
 
+        if (!(await _authorizationService.AuthorizeAsync(User, order, Policies.ResourceOwnerPolicy)).Succeeded)
+        {
+            return Forbid();
+        }
+
         if (order.Status != EnOrderStatus.Pending)
         {
             return BadRequest("This order is no longer eligible for payment processing");
         }
 
-        //Test
-        if (false)
-            if (!await _warehouseService.Health())
-            {
-                return Problem("Payment Processing Failed", statusCode: StatusCodes.Status503ServiceUnavailable);
-            }
+        if (!await _warehouseService.Health())
+        {
+            return Problem("Payment Processing Failed", statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
 
         var sessionResult = await _stripeService.CreateCheckoutSessionAsync(
             request.SuccessUrl,
@@ -230,14 +268,12 @@ public class OrdersController : ControllerBase
                         break;
                     }
 
-                    //Test
-                    if (false)
-                        if (!await _warehouseService.ReserveProductsInWarehouseAsync(payment.OrderId))
-                        {
-                            await _stripeService.RefundPaymentAsync(session.PaymentIntentId);
-                            await payment.Cancel();
-                            break;
-                        }
+                    if (!await _warehouseService.ReserveProductsInWarehouseAsync(payment.OrderId))
+                    {
+                        await _stripeService.RefundPaymentAsync(session.PaymentIntentId);
+                        await payment.Cancel();
+                        break;
+                    }
 
                     if (!await payment.Complete())
                     {

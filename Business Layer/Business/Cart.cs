@@ -3,17 +3,24 @@
 using Data_Layer.Data;
 using Microsoft.Extensions.Logging;
 using Models;
-using Models.DTO;
 using System.Data;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text;
+using Models.DTO;
+using Business_Layer.Interfaces;
 namespace Business_Layer.Business;
 
-public class Cart
+public class Cart : IOwnable
 {
     public int Id { get; init; }
     public int UserId { get; init; }
+
+    public CartDTO DTO => new CartDTO
+    {
+        Id = this.Id,
+        UserId = this.UserId,
+    };
 
     private Cart(CartDTO dto)
     {
@@ -54,22 +61,22 @@ public class Cart
         }
     }
 
-    public async Task<bool> Contains(int productId)
+    public async Task<bool> ContainsAsync(int productId)
     {
         return await CartsData.Contains(this.Id, productId);
     }
 
-    public async Task<decimal> GetTotalPrice()
+    public async Task<decimal> GetTotalPriceAsync()
     {
-        return await CartsData.GetTotalPrice(this.Id);
+        return await CartsData.GetTotalPriceAsync(this.Id);
     }
 
-    public async Task<bool> RemoveExpiredPromocodesAsync()
+    public async Task<bool> RemoveInvalidPromocodesAsync()
     {
-        return await CartsData.RemoveInvalidPromocodes(this.Id);
+        return await CartsData.RemoveInvalidPromocodesAsync(this.Id);
     }
 
-    public async Task<bool> SyncCartQuantityWithStockAsync()
+    public async Task<bool> SyncCartQuantityWithProductQuantityAsync()
     {
         return await CartsData.SyncCartQuantityWithProductQuantityAsync(this.Id);
     }

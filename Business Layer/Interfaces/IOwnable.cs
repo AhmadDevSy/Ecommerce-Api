@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Data_Layer.Options
+namespace Business_Layer.Interfaces
 {
-    public class ConnectionStrings
+    public interface IOwnable
     {
-        public static string? Default;
+        public int UserId { get; init; }
     }
 }

@@ -4,14 +4,14 @@ using Models;
 using Data_Layer.Data;
 using System.Net.Http.Headers;
 using Enums;
-using Models.DTO;
-using Models.Enums;
 using Business_Layer.DTO;
 using Stripe.Climate;
+using Models.DTO;
+using Business_Layer.Interfaces;
 
 namespace Business_Layer.Business;
 
-public class Payment
+public class Payment : IOwnable
 {
     private EnRecordMode Mode;
 

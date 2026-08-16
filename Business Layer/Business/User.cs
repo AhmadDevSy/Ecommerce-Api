@@ -5,11 +5,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Http;
 using Data_Layer.Data;
 using BCryptHelper = BCrypt.Net.BCrypt;
-using Models.DTO;
 using Enums;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using Models.DTO;
 
 namespace Business_Layer.Business;
 
@@ -109,25 +109,10 @@ public class User
         return await UserData.Exists(email);
     }
 
-    public string CreateToken()
+    public async Task<List<RoleDTO>> GetRoles()
     {
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, this.Id.ToString()),
-        };
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("SigningKey")));
-
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var token = new JwtSecurityToken(
-            issuer: Environment.GetEnvironmentVariable("Issuer"),
-            audience: Environment.GetEnvironmentVariable("Audience"),
-            claims: claims,
-            expires: DateTime.Now.AddMinutes(30),
-            signingCredentials: creds
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return await Role.GetByUserId(this.Id);
     }
+
+
 }

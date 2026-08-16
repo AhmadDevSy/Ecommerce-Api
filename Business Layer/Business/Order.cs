@@ -3,16 +3,16 @@ using System.Text;
 using System.Text.Json;
 using Data_Layer.Data;
 using System.Net.Http.Headers;
-using Enums;
-using Models.DTO;
-using Models.Enums;
 using Business_Layer.DTO;
-using Models.Results;
 using Business_Layer.Services;
+using Models.DTO;
+using Enums;
+using Models.Results;
+using Business_Layer.Interfaces;
 
 namespace Business_Layer.Business;
 
-public class Order
+public class Order : IOwnable
 {
     public int Id { get; init; }
     public decimal TotalPrice { get; init; }

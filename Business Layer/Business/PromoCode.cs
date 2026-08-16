@@ -1,13 +1,14 @@
 ﻿using Enums;
 using Models;
 using Data_Layer.Data;
-using Models.DTO;
 using System.Runtime.CompilerServices;
 using System.Numerics;
+using Models.DTO;
+using Business_Layer.Interfaces;
 
 namespace Business_Layer.Business;
 
-public class PromoCode
+public class PromoCode : IOwnable
 {
     protected EnRecordMode Mode;
 

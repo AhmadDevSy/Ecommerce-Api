@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Models;
 using Microsoft.AspNetCore.Authorization;
 using Enums;
 using Business_Layer.Business;
@@ -7,16 +6,19 @@ using Models.DTO;
 
 namespace Presentation_Layer.Controllers;
 
+[Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/categories")]
 public class CategoriesController : ControllerBase
 {
+
+    [AllowAnonymous]
     [HttpGet("all")]
     public async Task<IActionResult> Get()
     {
         List<CategoryDTO> categories = await Category.GetAll();
 
-        if(categories == null)
+        if (categories == null)
         {
             return Ok(new List<CategoryDTO>());
         }
@@ -24,18 +26,23 @@ public class CategoriesController : ControllerBase
         return Ok(categories);
     }
 
+
+
+    [AllowAnonymous]
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(int id)
     {
         Category category = await Category.GetById(id);
 
-        if(category == null)
+        if (category == null)
         {
             return NotFound();
         }
 
         return Ok(category.DTO);
     }
+
+
 
     [HttpPost]
     public async Task<IActionResult> Add(CategoryDTO dto)
@@ -45,7 +52,7 @@ public class CategoriesController : ControllerBase
             Name = dto.Name
         };
 
-        if(!await category.Save())
+        if (!await category.Save())
         {
             return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
         }
@@ -55,6 +62,8 @@ public class CategoriesController : ControllerBase
             CategoryId = category.Id
         });
     }
+
+
 
     [HttpPut]
     public async Task<IActionResult> Update(CategoryDTO dto)

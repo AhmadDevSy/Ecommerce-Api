@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Enums
+namespace Models.DTO
 {
-    public enum EnRecordMode
+    public class RoleDTO
     {
-        Add,
-        Update
+        public int Id { get; set; }
+        public string Name { get; set; }
     }
 }

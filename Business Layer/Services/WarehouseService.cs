@@ -1,7 +1,7 @@
 ﻿using Business_Layer.Business;
+using Models.DTO;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Models.DTO;
 using Models.Requests;
 using System;
 using System.Collections.Generic;

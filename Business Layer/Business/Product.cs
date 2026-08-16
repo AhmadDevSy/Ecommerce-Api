@@ -9,17 +9,18 @@ using System.Net;
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Logging;
 using Data_Layer.Data;
-using Models.DTO;
 using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using Models;
 using System.ComponentModel.DataAnnotations;
 using static System.Net.Mime.MediaTypeNames;
+using Models.DTO;
+using Business_Layer.Interfaces;
 
 
 namespace Business_Layer.Business;
 
-public class Product
+public class Product : IOwnable
 {
     private EnRecordMode Mode;
 
@@ -29,9 +30,9 @@ public class Product
     public decimal Price { get; set; }
     public DateTime CreateDate { get; set; }
     public string? Description { get; set; }
-    public int UserId { get; set; }
+    public int UserId { get; init; }
     public int CategoryId { get; set; }
-    public int? MainImageId { get; set; }
+    public int? MainImageId { get; protected set; }
 
     public ProductDTO DTO => new ProductDTO()
     {
@@ -171,6 +172,16 @@ public class Product
         }
     }
 
+    public bool SetMainImage(ProductImage productImage)
+    {
+        if (productImage == null || productImage.ProductId != this.Id)
+        {
+            return false;
+        }
+
+        this.MainImageId = productImage.Id;
+        return true;
+    }
 
 
 }

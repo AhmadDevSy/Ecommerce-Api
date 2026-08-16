@@ -1,4 +1,5 @@
 ﻿using System.Data;
+
 using Data_Layer.Options;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -110,6 +111,34 @@ public class CategoryData
         {
             await conn.OpenAsync();
             return await cmd.ExecuteNonQueryAsync() > 0;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    public static async Task<bool> Exists(int categoryId)
+    {
+        string query = "SELECT 1 FROM Categories WHERE Id = @Id";
+        using var conn = new SqlConnection(ConnectionStrings.Default);
+        using var cmd = new SqlCommand(query, conn);
+
+        cmd.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = categoryId });
+
+        try
+        {
+            await conn.OpenAsync();
+            var obj = await cmd.ExecuteScalarAsync();
+
+            if (obj == null || obj == DBNull.Value)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
         }
         catch (Exception)
         {

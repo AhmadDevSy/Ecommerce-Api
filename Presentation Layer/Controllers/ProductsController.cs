@@ -2,12 +2,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Business_Layer.Business;
-using Models.DTO;
 using Data_Layer.Data;
 using Business_Layer.Services;
 using Models.Requests;
 using Presentation_Layer.Extensions;
-
+using Models.DTO;
+using Presentation_Layer.Authorization;
+using ProjectUser = Business_Layer.Business.User;
 
 namespace Presentation_Layer.Controllers;
 
@@ -17,45 +18,41 @@ namespace Presentation_Layer.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly WarehouseService _warehouseService;
+    private readonly IAuthorizationService _authorizationService;
 
-    public ProductsController(WarehouseService warehouseService)
+    public ProductsController(WarehouseService warehouseService, IAuthorizationService authorizationService)
     {
         this._warehouseService = warehouseService;
+        this._authorizationService = authorizationService;
     }
 
-
+    [AllowAnonymous]
     [HttpGet("catalog")]
     public async Task<IActionResult> GetProductsCatalog([FromQuery] int lastSeenId, [FromQuery] int? categoryId)
     {
+        if (categoryId != null && !await Category.Exists(categoryId.Value))
+        {
+            return NotFound("Category not found");
+        }
+
         var products = categoryId == null ?
             await Product.GetProductsCatalog(lastSeenId, 12) :
             await Product.GetProductsCatalog(categoryId.Value, lastSeenId, 12);
 
-        if (products == null)
-        {
-            return NotFound();
-        }
+        products = products ?? [];
 
-        if (products.Count == 0)
+        return Ok(new
         {
-            return Ok(new
-            {
-                Products = products,
-                LastSeenId = lastSeenId
-            });
-        }
-        else
-        {
-            return Ok(new
-            {
-                Products = products,
-                LastSeenId = products[products.Count - 1].Id
-            });
-        }
+            Products = products,
+            LastSeenId = products.Count == 0 ? lastSeenId : products[products.Count - 1].Id
+        });
     }
 
+
+
+    [AllowAnonymous]
     [HttpGet("{productId}")]
-    public async Task<IActionResult> GetProductById(int productId)
+    public async Task<IActionResult> GetProductById([FromRoute] int productId)
     {
         Product product = await Product.GetById(productId);
 
@@ -67,41 +64,47 @@ public class ProductsController : ControllerBase
         return Ok(product.DTO);
     }
 
-    [HttpGet("user/{userId}")]
-    public async Task<IActionResult> GetProductsByUserId(int userId)
-    {
-        List<ProductDTO> products = await Product.GetProductsByUserId(userId);
 
-        if (products == null || products.Count == 0)
+
+    [HttpGet("user/{userId}")]
+    public async Task<IActionResult> GetProductsByUserId([FromRoute] int userId)
+    {
+        ProjectUser user = await ProjectUser.Get(userId);
+
+        if (user == null)
         {
-            return NotFound();
+            return NotFound("User not found");
         }
 
-        return Ok(products);
+        if (!(await _authorizationService.AuthorizeAsync(User, userId, Policies.AdminOrOwnerSellerPolicy)).Succeeded)
+        {
+            return Forbid();
+        }
+
+        return Ok(await Product.GetProductsByUserId(userId) ?? []);
     }
 
+
+
+    [AllowAnonymous]
     [HttpGet("{productId}/images")]
-    public async Task<IActionResult> GetImages(int productId)
+    public async Task<IActionResult> GetImages([FromRoute] int productId)
     {
         Product product = await Product.GetById(productId);
 
         if (product == null)
         {
-            return NotFound();
+            return NotFound("Product not found");
         }
 
-        IList<ProductImageDTO> images = await ProductImage.GetByProductId(productId);
-
-        if (images == null || images.Count == 0)
-        {
-            return NotFound();
-        }
-
-        return Ok(images);
+        return Ok(await ProductImage.GetByProductId(productId) ?? []);
     }
 
+
+
+    [Authorize(Roles = "Seller")]
     [HttpPost]
-    public async Task<IActionResult> Add(InsertProductRequest info)
+    public async Task<IActionResult> Add([FromBody] InsertProductRequest info)
     {
         Product product = new Product()
         {
@@ -114,25 +117,30 @@ public class ProductsController : ControllerBase
 
         if (!await product.Save())
         {
-            return BadRequest();
+            return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
         }
 
         await _warehouseService.SendProductInfoToWarehouseAsync(product.DTO);
 
-        return Ok(new
-        {
-            ProductId = product.Id
-        });
+        return CreatedAtAction(nameof(GetProductById), new { productId = product.Id }, product.DTO);
     }
 
-    [HttpPut("{productId}")]
-    public async Task<IActionResult> Update(ProductDTO dto, int productId)
+
+
+    [Authorize(Roles = "Seller")]
+    [HttpPut]
+    public async Task<IActionResult> Update([FromBody] UpdateProductRequest dto)
     {
-        Product product = await Product.GetById(productId);
+        Product product = await Product.GetById(dto.Id);
 
         if (product == null)
         {
             return NotFound("Product Not Found");
+        }
+
+        if (!(await _authorizationService.AuthorizeAsync(User, product, Policies.ResourceOwnerPolicy)).Succeeded)
+        {
+            return Forbid();
         }
 
         product.Name = dto.Name;
@@ -140,17 +148,17 @@ public class ProductsController : ControllerBase
         product.CategoryId = dto.CategoryId;
         product.Price = dto.Price;
 
-        if (await product.Save())
+        if (!await product.Save())
         {
-            return NoContent();
+            return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
         }
-        else
-        {
-            return BadRequest("Invalid Inputs");
-        }
+
+        return NoContent();
     }
 
 
+
+    [Authorize(Roles = "Seller")]
     [HttpPost("{productId}/upload-image")]
     public async Task<IActionResult> UploadImage(IFormFile image, int productId)
     {
@@ -166,18 +174,24 @@ public class ProductsController : ControllerBase
             return NotFound("Product Not Found");
         }
 
+        if (!(await _authorizationService.AuthorizeAsync(User, product, Policies.ResourceOwnerPolicy)).Succeeded)
+        {
+            return Forbid();
+        }
+
         ProductImage productImage = await product.UploadImage(image);
 
-        if (productImage != null)
+        if (productImage == null)
         {
-            return Ok(productImage.DTO);
+            return Problem("Something went wrong", statusCode: StatusCodes.Status500InternalServerError);
         }
-        else
-        {
-            return BadRequest("Save Image Failed");
-        }
+
+        return Ok(productImage.DTO);
     }
 
+
+
+    [Authorize(Roles = "Seller")]
     [HttpPatch("{productId}/main-image/{imageId}")]
     public async Task<IActionResult> SetMainImage(int productId, int imageId)
     {
@@ -186,6 +200,11 @@ public class ProductsController : ControllerBase
         if (product == null)
         {
             return NotFound("Product Not Found");
+        }
+
+        if (!(await _authorizationService.AuthorizeAsync(User, product, Policies.ResourceOwnerPolicy)).Succeeded)
+        {
+            return Forbid();
         }
 
         ProductImage productImage = await ProductImage.GetById(imageId);
@@ -200,9 +219,7 @@ public class ProductsController : ControllerBase
             return BadRequest("The image does not belong to this product");
         }
 
-        product.MainImageId = productImage.Id;
-
-        if (!await product.Save())
+        if (!product.SetMainImage(productImage) || !await product.Save())
         {
             return Problem("Failed to set the main image.", statusCode: StatusCodes.Status500InternalServerError);
         }
@@ -210,12 +227,22 @@ public class ProductsController : ControllerBase
         return NoContent();
     }
 
+
+
+    [Authorize(Roles = "Seller")]
     [HttpPost("{productId}/send-add-quantity-request")]
     public async Task<IActionResult> SendAddQuantityRequest(AddProductQuantityRequest request, int productId)
     {
-        if (!await Product.Exists(productId))
+        Product product = await Product.GetById(productId);
+
+        if (product == null)
         {
             return NotFound("Product not found");
+        }
+
+        if (!(await _authorizationService.AuthorizeAsync(User, product, Policies.ResourceOwnerPolicy)).Succeeded)
+        {
+            return Forbid();
         }
 
         if (!await _warehouseService.SendAddQuantityRequestAsync(productId, request))
