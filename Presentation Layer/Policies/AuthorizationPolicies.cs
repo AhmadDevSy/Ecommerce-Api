@@ -1,6 +1,6 @@
-﻿namespace Presentation_Layer.Authorization
+﻿namespace Presentation_Layer.Policies
 {
-    public class Policies
+    public class AuthorizationPolicies
     {
         public static readonly string ResourceOwnerPolicy = "ResourceOwnerPolicy";
         public static readonly string AdminOrOwnerSellerPolicy = "AdminOrOwnerSellerPolicy";

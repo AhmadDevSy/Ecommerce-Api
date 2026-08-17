@@ -15,13 +15,14 @@ namespace Data_Layer.Data
         public static async Task<bool> AddAsync(PaymentDTO payment)
         {
             const string query = @"
-            INSERT INTO Payments (Id, StatusId, OrderId, Amount, CreateDate, UserId)
-            VALUES (@Id, @StatusId, @OrderId, @Amount, @CreateDate, @UserId);";
+            INSERT INTO Payments (Id,SessionUrl ,StatusId, OrderId, Amount, CreateDate, UserId)
+            VALUES (@Id,@SessionUrl, @StatusId, @OrderId, @Amount, @CreateDate, @UserId);";
 
             using SqlConnection connection = new(ConnectionStrings.Default);
             using SqlCommand command = new(query, connection);
 
             command.Parameters.AddWithValue("@Id", payment.Id);
+            command.Parameters.AddWithValue("@SessionUrl", payment.SessionUrl);
             command.Parameters.AddWithValue("@StatusId", payment.StatusId);
             command.Parameters.AddWithValue("@OrderId", payment.OrderId);
             command.Parameters.AddWithValue("@Amount", payment.Amount);
@@ -65,7 +66,7 @@ namespace Data_Layer.Data
         public static async Task<PaymentDTO> GetByIdAsync(string id)
         {
             const string query = @"
-            SELECT Id, StatusId, OrderId, Amount, CreateDate, UserId 
+            SELECT Id,SessionUrl ,StatusId, OrderId, Amount, CreateDate, UserId 
             FROM Payments 
             WHERE Id = @Id;";
 
@@ -85,6 +86,7 @@ namespace Data_Layer.Data
                     {
                         Id = reader.GetString(reader.GetOrdinal("Id")),
                         StatusId = reader.GetByte(reader.GetOrdinal("StatusId")),
+                        SessionUrl = reader.GetString(reader.GetOrdinal("SessionUrl")),
                         OrderId = reader.GetInt32(reader.GetOrdinal("OrderId")),
                         Amount = reader.GetDecimal(reader.GetOrdinal("Amount")),
                         CreateDate = reader.GetDateTime(reader.GetOrdinal("CreateDate")),
@@ -119,6 +121,43 @@ namespace Data_Layer.Data
             }
         }
 
+        public static async Task<PaymentDTO> GetActivePayment(int orderId)
+        {
+            const string query = @"
+            SELECT Id,SessionUrl ,StatusId, OrderId, Amount, CreateDate, UserId 
+            FROM Payments 
+            WHERE OrderId = @OrderId AND StatusId = 1;";
 
+            using SqlConnection connection = new(ConnectionStrings.Default);
+            using SqlCommand command = new(query, connection);
+
+            command.Parameters.AddWithValue("@OrderId", orderId);
+
+            try
+            {
+                await connection.OpenAsync();
+                using SqlDataReader reader = await command.ExecuteReaderAsync();
+
+                if (await reader.ReadAsync())
+                {
+                    return new PaymentDTO
+                    {
+                        Id = reader.GetString(reader.GetOrdinal("Id")),
+                        StatusId = reader.GetByte(reader.GetOrdinal("StatusId")),
+                        SessionUrl = reader.GetString(reader.GetOrdinal("SessionUrl")),
+                        OrderId = reader.GetInt32(reader.GetOrdinal("OrderId")),
+                        Amount = reader.GetDecimal(reader.GetOrdinal("Amount")),
+                        CreateDate = reader.GetDateTime(reader.GetOrdinal("CreateDate")),
+                        UserId = reader.GetInt32(reader.GetOrdinal("UserId"))
+                    };
+                }
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+
+            return null;
+        }
     }
 }

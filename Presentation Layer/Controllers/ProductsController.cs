@@ -7,12 +7,12 @@ using Business_Layer.Services;
 using Models.Requests;
 using Presentation_Layer.Extensions;
 using Models.DTO;
-using Presentation_Layer.Authorization;
 using ProjectUser = Business_Layer.Business.User;
+using Presentation_Layer.Policies;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Presentation_Layer.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("api/products")]
 public class ProductsController : ControllerBase
@@ -26,6 +26,7 @@ public class ProductsController : ControllerBase
         this._authorizationService = authorizationService;
     }
 
+    [EnableRateLimiting(RateLimitPolicies.LargePublicRead)]
     [AllowAnonymous]
     [HttpGet("catalog")]
     public async Task<IActionResult> GetProductsCatalog([FromQuery] int lastSeenId, [FromQuery] int? categoryId)
@@ -50,6 +51,7 @@ public class ProductsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.PublicRead)]
     [AllowAnonymous]
     [HttpGet("{productId}")]
     public async Task<IActionResult> GetProductById([FromRoute] int productId)
@@ -66,6 +68,8 @@ public class ProductsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.UserRead)]
+    [Authorize]
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetProductsByUserId([FromRoute] int userId)
     {
@@ -76,7 +80,7 @@ public class ProductsController : ControllerBase
             return NotFound("User not found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, userId, Policies.AdminOrOwnerSellerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, userId, AuthorizationPolicies.AdminOrOwnerSellerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -86,6 +90,7 @@ public class ProductsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.LargePublicRead)]
     [AllowAnonymous]
     [HttpGet("{productId}/images")]
     public async Task<IActionResult> GetImages([FromRoute] int productId)
@@ -102,6 +107,7 @@ public class ProductsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.Write)]
     [Authorize(Roles = "Seller")]
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] InsertProductRequest info)
@@ -127,6 +133,8 @@ public class ProductsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.Write)]
+
     [Authorize(Roles = "Seller")]
     [HttpPut]
     public async Task<IActionResult> Update([FromBody] UpdateProductRequest dto)
@@ -138,7 +146,7 @@ public class ProductsController : ControllerBase
             return NotFound("Product Not Found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, product, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, product, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -158,6 +166,7 @@ public class ProductsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.Upload)]
     [Authorize(Roles = "Seller")]
     [HttpPost("{productId}/upload-image")]
     public async Task<IActionResult> UploadImage(IFormFile image, int productId)
@@ -174,7 +183,7 @@ public class ProductsController : ControllerBase
             return NotFound("Product Not Found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, product, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, product, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -191,6 +200,8 @@ public class ProductsController : ControllerBase
 
 
 
+
+    [EnableRateLimiting(RateLimitPolicies.Write)]
     [Authorize(Roles = "Seller")]
     [HttpPatch("{productId}/main-image/{imageId}")]
     public async Task<IActionResult> SetMainImage(int productId, int imageId)
@@ -202,7 +213,7 @@ public class ProductsController : ControllerBase
             return NotFound("Product Not Found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, product, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, product, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -229,6 +240,7 @@ public class ProductsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.ExternalOperation)]
     [Authorize(Roles = "Seller")]
     [HttpPost("{productId}/send-add-quantity-request")]
     public async Task<IActionResult> SendAddQuantityRequest(AddProductQuantityRequest request, int productId)
@@ -240,7 +252,7 @@ public class ProductsController : ControllerBase
             return NotFound("Product not found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, product, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, product, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }

@@ -17,6 +17,7 @@ public class Payment : IOwnable
 
     public string Id { get; init; }
     public int OrderId { get; init; }
+    public string SessionUrl { get; init; }
     public decimal Amount { get; init; }
     public DateTime CreateDate { get; init; }
     public int UserId { get; init; }
@@ -28,16 +29,18 @@ public class Payment : IOwnable
         Id = this.Id,
         StatusId = (byte)this.Status,
         OrderId = this.OrderId,
+        SessionUrl = this.SessionUrl,
         Amount = this.Amount,
         CreateDate = this.CreateDate,
         UserId = this.UserId
     };
 
-    public Payment(Order order, string paymentId)
+    public Payment(Order order, string paymentId,string payUrl)
     {
         Id = paymentId;
         Status = EnPaymentStatus.Pending;
         CreateDate = DateTime.UtcNow;
+        SessionUrl = payUrl;
 
         OrderId = order.Id;
         Amount = order.TotalPrice;
@@ -61,6 +64,18 @@ public class Payment : IOwnable
     public static async Task<Payment> GetById(string id)
     {
         PaymentDTO dto = await PaymentData.GetByIdAsync(id);
+
+        if (dto == null)
+        {
+            return null;
+        }
+
+        return new Payment(dto);
+    }
+
+    public static async Task<Payment> GetActivePayment(int orderId)
+    {
+        PaymentDTO dto = await PaymentData.GetActivePayment(orderId);
 
         if (dto == null)
         {
@@ -128,6 +143,6 @@ public class Payment : IOwnable
         return true;
     }
 
-
+   
 
 }

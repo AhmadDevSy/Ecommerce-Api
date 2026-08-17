@@ -9,6 +9,7 @@ namespace Models.DTO
     public class PaymentDTO
     {
         public string Id { get; set; } = string.Empty;
+        public string SessionUrl { get; init; }
         public byte StatusId { get; set; }
         public int OrderId { get; set; }
         public decimal Amount { get; set; }

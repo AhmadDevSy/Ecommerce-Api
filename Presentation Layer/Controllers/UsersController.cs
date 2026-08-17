@@ -8,6 +8,8 @@ using System.Security.Claims;
 using System.Text;
 using Presentation_Layer.Authentication;
 using Models.Response;
+using Microsoft.AspNetCore.RateLimiting;
+using Presentation_Layer.Policies;
 
 namespace Presentation_Layer.Controllers;
 
@@ -27,6 +29,8 @@ public class UsersController : ControllerBase
         this._tokenService = tokenService;
     }
 
+
+    [EnableRateLimiting(RateLimitPolicies.AuthPolicy)]
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
@@ -54,6 +58,9 @@ public class UsersController : ControllerBase
         });
     }
 
+
+
+    [EnableRateLimiting(RateLimitPolicies.AuthPolicy)]
     [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest request)
@@ -93,6 +100,7 @@ public class UsersController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.AuthPolicy)]
     [AllowAnonymous]
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] RefreshTokensRequest request)
@@ -137,6 +145,7 @@ public class UsersController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.AuthPolicy)]
     [AllowAnonymous]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout([FromBody] LogoutRequest request)

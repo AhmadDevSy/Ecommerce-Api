@@ -10,9 +10,12 @@ using Business_Layer.Options;
 using Presentation_Layer.Options;
 using Presentation_Layer.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using Presentation_Layer.Authorization;
 using Presentation_Layer.Authorization.ProductOwner;
-
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
+using Presentation_Layer.Policies;
+using Presentation_Layer.Extensions;
+using Presentation_Layer.Helper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -88,9 +91,9 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy(Policies.AdminOrOwnerPolicy, policy => policy.Requirements.Add(new AdminOrOwnerRequirement()));
-    options.AddPolicy(Policies.ResourceOwnerPolicy, policy => policy.Requirements.Add(new ResourceOwnerRequirement()));
-    options.AddPolicy(Policies.AdminOrOwnerSellerPolicy, policy => policy.Requirements.Add(new AdminOrOwnerSellerRequirement()));
+    options.AddPolicy(AuthorizationPolicies.AdminOrOwnerPolicy, policy => policy.Requirements.Add(new AdminOrOwnerRequirement()));
+    options.AddPolicy(AuthorizationPolicies.ResourceOwnerPolicy, policy => policy.Requirements.Add(new ResourceOwnerRequirement()));
+    options.AddPolicy(AuthorizationPolicies.AdminOrOwnerSellerPolicy, policy => policy.Requirements.Add(new AdminOrOwnerSellerRequirement()));
 });
 
 builder.Services.AddControllers();
@@ -100,6 +103,34 @@ builder.Services.AddHttpClient("WarehouseService", client =>
     client.BaseAddress = new Uri(warehouseApiBaseUrl);
 }).AddAsKeyed();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy(RateLimitPolicies.AuthPolicy,
+          context => RateLimitHelper.ByIp(context, 5));
+
+    options.AddPolicy(RateLimitPolicies.PublicRead,
+          context => RateLimitHelper.ByIp(context, 60));
+
+    options.AddPolicy(RateLimitPolicies.LargePublicRead,
+          context => RateLimitHelper.ByIp(context, 20));
+
+    options.AddPolicy(RateLimitPolicies.UserRead,
+          context => RateLimitHelper.ByUser(context, 30));
+
+    options.AddPolicy(RateLimitPolicies.Write,
+          context => RateLimitHelper.ByUser(context, 20));
+
+    options.AddPolicy(RateLimitPolicies.Upload,
+          context => RateLimitHelper.ByUser(context, 5));
+
+    options.AddPolicy(RateLimitPolicies.ExternalOperation,
+          context => RateLimitHelper.ByUser(context, 5));
+
+    options.AddPolicy(RateLimitPolicies.Webhook,
+         context => RateLimitHelper.ByIp(context, 60));
+});
 
 builder.Services.AddScoped<StripePaymentService>();
 builder.Services.AddScoped<WarehouseService>();
@@ -128,6 +159,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseRateLimiter();
 
 app.UseCors("EcommerceCorsPolicy");
 

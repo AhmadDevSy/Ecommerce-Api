@@ -6,12 +6,12 @@ using Business_Layer.Business;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Models.DTO;
 using Presentation_Layer.Extensions;
-using Presentation_Layer.Authorization;
 using Business_Layer.Services;
+using Presentation_Layer.Policies;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Presentation_Layer.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("api/carts")]
 public class CartsController : ControllerBase
@@ -26,6 +26,8 @@ public class CartsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.UserRead)]
+    [Authorize]
     [HttpGet("{userId}")]
     public async Task<IActionResult> GetCartByUserId(int userId)
     {
@@ -36,7 +38,7 @@ public class CartsController : ControllerBase
             return NotFound("Cart Not Found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, cart, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, cart, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -46,6 +48,8 @@ public class CartsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.UserRead)]
+    [Authorize]
     [HttpGet("{cartId}/items")]
     public async Task<IActionResult> GetCartItems(int cartId)
     {
@@ -56,7 +60,7 @@ public class CartsController : ControllerBase
             return NotFound("Cart Not Found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, cart, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, cart, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -73,6 +77,8 @@ public class CartsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.UserRead)]
+    [Authorize]
     [HttpGet("{cartId}/total-price")]
     public async Task<IActionResult> GetTotalPrice(int cartId)
     {
@@ -83,7 +89,7 @@ public class CartsController : ControllerBase
             return NotFound("Cart Not Found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, cart, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, cart, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -96,6 +102,8 @@ public class CartsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.Write)]
+    [Authorize]
     [HttpPost("{cartId}/items/{productId}")]
     public async Task<IActionResult> Add(int cartId, int productId)
     {
@@ -106,7 +114,7 @@ public class CartsController : ControllerBase
             return NotFound("Cart Not Found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, cart, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, cart, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -146,6 +154,8 @@ public class CartsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.Write)]
+    [Authorize]
     [HttpPatch("items/{cartItemId}/plus")]
     public async Task<IActionResult> PlusOneCartItem(int cartItemId)
     {
@@ -158,7 +168,7 @@ public class CartsController : ControllerBase
 
         Cart cart = await Cart.GetByCartId(item.CartId);
 
-        if (!(await _authorizationService.AuthorizeAsync(User, cart, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, cart, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -175,6 +185,8 @@ public class CartsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.Write)]
+    [Authorize]
     [HttpPatch("items/{cartItemId}/minus")]
     public async Task<IActionResult> MinusOneCartItem(int cartItemId)
     {
@@ -187,7 +199,7 @@ public class CartsController : ControllerBase
 
         Cart cart = await Cart.GetByCartId(item.CartId);
 
-        if (!(await _authorizationService.AuthorizeAsync(User, cart, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, cart, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -210,6 +222,8 @@ public class CartsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.Write)]
+    [Authorize]
     [HttpDelete("items/{cartItemId}")]
     public async Task<IActionResult> DeleteCartItem(int cartItemId)
     {
@@ -222,7 +236,7 @@ public class CartsController : ControllerBase
 
         Cart cart = await Cart.GetByCartId(item.CartId);
 
-        if (!(await _authorizationService.AuthorizeAsync(User, cart, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, cart, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -237,6 +251,8 @@ public class CartsController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.Write)]
+    [Authorize]
     [HttpPatch("items/{cartItemId}/apply-promocode/{code}")]
     public async Task<IActionResult> ApplyPromocode(int cartItemId, string code)
     {
@@ -249,7 +265,7 @@ public class CartsController : ControllerBase
 
         Cart cart = await Cart.GetByCartId(item.CartId);
 
-        if (!(await _authorizationService.AuthorizeAsync(User, cart, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, cart, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }

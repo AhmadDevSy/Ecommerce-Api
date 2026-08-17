@@ -14,11 +14,11 @@ using StripeEvent = Stripe.Event;
 using Stripe.Climate;
 using ProjectOrder = Business_Layer.Business.Order;
 using ProjectUser = Business_Layer.Business.User;
-using Presentation_Layer.Authorization;
+using Presentation_Layer.Policies;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Presentation_Layer.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("api/orders")]
 public class OrdersController : ControllerBase
@@ -36,6 +36,7 @@ public class OrdersController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.Write)]
     [Authorize]
     [HttpPost("{cartId}")]
     public async Task<IActionResult> Add(int cartId)
@@ -47,7 +48,7 @@ public class OrdersController : ControllerBase
             return NotFound("Cart Not Found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, cart, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, cart, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -58,7 +59,7 @@ public class OrdersController : ControllerBase
         {
             case EnCreateOrderResult.Success:
                 {
-                    return CreatedAtAction(nameof(GetById), new { productId = op.Order.Id }, op.Order.DTO);
+                    return CreatedAtAction(nameof(GetById), new { productId = op.Order!.Id }, op.Order.DTO);
                 }
 
             case EnCreateOrderResult.CartNotFound:
@@ -90,6 +91,7 @@ public class OrdersController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.UserRead)]
     [Authorize]
     [HttpGet("{orderId}")]
     public async Task<IActionResult> GetById(int orderId)
@@ -101,7 +103,7 @@ public class OrdersController : ControllerBase
             return NotFound("Order not found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, order.UserId, Policies.AdminOrOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, order.UserId, AuthorizationPolicies.AdminOrOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -111,18 +113,19 @@ public class OrdersController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.UserRead)]
     [Authorize]
     [HttpGet("{orderId}/items")]
     public async Task<IActionResult> GetOrderItems(int orderId)
     {
         ProjectOrder order = await ProjectOrder.GetById(orderId);
 
-        if(order == null)
+        if (order == null)
         {
             return NotFound("Order not found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, order.UserId, Policies.AdminOrOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, order.UserId, AuthorizationPolicies.AdminOrOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -132,18 +135,19 @@ public class OrdersController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.UserRead)]
     [Authorize]
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetOrdersByUserId(int userId)
     {
         ProjectUser user = await ProjectUser.Get(userId);
 
-        if(user == null)
+        if (user == null)
         {
             return NotFound("User not found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, userId, Policies.AdminOrOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, userId, AuthorizationPolicies.AdminOrOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -153,6 +157,7 @@ public class OrdersController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.UserRead)]
     [Authorize]
     [HttpPost("{orderId}/pay")]
     public async Task<IActionResult> CreateCheckout([FromBody] PaymentRequest request, int orderId)
@@ -164,7 +169,7 @@ public class OrdersController : ControllerBase
             return NotFound("Order not found");
         }
 
-        if (!(await _authorizationService.AuthorizeAsync(User, order, Policies.ResourceOwnerPolicy)).Succeeded)
+        if (!(await _authorizationService.AuthorizeAsync(User, order, AuthorizationPolicies.ResourceOwnerPolicy)).Succeeded)
         {
             return Forbid();
         }
@@ -172,6 +177,13 @@ public class OrdersController : ControllerBase
         if (order.Status != EnOrderStatus.Pending)
         {
             return BadRequest("This order is no longer eligible for payment processing");
+        }
+
+        Payment payment = await Payment.GetActivePayment(order.Id);
+
+        if (payment != null)
+        {
+            return Ok(new { sessionUrl = payment.SessionUrl });
         }
 
         if (!await _warehouseService.Health())
@@ -190,7 +202,7 @@ public class OrdersController : ControllerBase
             return Problem("Payment Processing Failed", statusCode: StatusCodes.Status500InternalServerError);
         }
 
-        Payment payment = new Payment(order, sessionResult.SessionId);
+        payment = new Payment(order, sessionResult.SessionId, sessionResult.SessionUrl);
 
         if (!await payment.Save())
         {
@@ -201,6 +213,8 @@ public class OrdersController : ControllerBase
     }
 
 
+
+    [EnableRateLimiting(RateLimitPolicies.Webhook)]
     [AllowAnonymous]
     [HttpPost("handle-webhook")]
     public async Task<IActionResult> HandleWebhook()

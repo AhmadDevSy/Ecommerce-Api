@@ -3,15 +3,17 @@ using Microsoft.AspNetCore.Authorization;
 using Enums;
 using Business_Layer.Business;
 using Models.DTO;
+using Microsoft.AspNetCore.RateLimiting;
+using Presentation_Layer.Policies;
 
 namespace Presentation_Layer.Controllers;
 
-[Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/categories")]
 public class CategoriesController : ControllerBase
 {
 
+    [EnableRateLimiting(RateLimitPolicies.LargePublicRead)]
     [AllowAnonymous]
     [HttpGet("all")]
     public async Task<IActionResult> Get()
@@ -28,6 +30,7 @@ public class CategoriesController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.PublicRead)]
     [AllowAnonymous]
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(int id)
@@ -44,6 +47,8 @@ public class CategoriesController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.Write)]
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<IActionResult> Add(CategoryDTO dto)
     {
@@ -65,6 +70,8 @@ public class CategoriesController : ControllerBase
 
 
 
+    [EnableRateLimiting(RateLimitPolicies.Write)]
+    [Authorize(Roles = "Admin")]
     [HttpPut]
     public async Task<IActionResult> Update(CategoryDTO dto)
     {
