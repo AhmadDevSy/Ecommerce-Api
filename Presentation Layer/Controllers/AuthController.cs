@@ -19,12 +19,12 @@ using BCryptHelper = BCrypt.Net.BCrypt;
 
 
 [ApiController]
-[Route("api/users")]
-public class UsersController : ControllerBase
+[Route("api/auth")]
+public class AuthController : ControllerBase
 {
     private readonly TokenService _tokenService;
 
-    public UsersController(TokenService tokenService)
+    public AuthController(TokenService tokenService)
     {
         this._tokenService = tokenService;
     }
